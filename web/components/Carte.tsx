@@ -15,7 +15,7 @@ import { arc, couleurSocle, couleurSolde, EXPORT, FILIERES, gw, IMPORT, INTERCON
 setWorkerUrl("/maplibre-gl-worker.mjs");
 
 const FOND = "https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json";
-const VUE_INITIALE: MapViewState = { longitude: 2.2, latitude: 45.6, zoom: 5.05, pitch: 52, bearing: -14 };
+const VUE_INITIALE: MapViewState = { longitude: 2.3, latitude: 45.75, zoom: 5.22, pitch: 52, bearing: -14 };
 
 // Lumière rasante venue du sud-ouest, comme un soleil de fin d'après-midi : les reliefs se lisent par leurs ombres.
 const LUMIERE = new LightingEffect({
