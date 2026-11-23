@@ -26,8 +26,8 @@ export default function PanneauDemain() {
     return () => clearTimeout(id);
   }, [delta]);
 
-  if (erreur) return <div className="panneau w-[340px] p-5 text-xs text-amber-300">Prévision indisponible : l&apos;API tourne-t-elle ? ({erreur.slice(0, 120)})</div>;
-  if (!prev) return <div className="panneau w-[340px] p-5 text-sm text-slate-400">Prévision en cours…</div>;
+  if (erreur) return <div className="panneau w-full md:w-[340px] p-5 text-xs text-amber-300">Prévision indisponible : l&apos;API tourne-t-elle ? ({erreur.slice(0, 120)})</div>;
+  if (!prev) return <div className="panneau w-full md:w-[340px] p-5 text-sm text-slate-400">Prévision en cours…</div>;
 
   const heures = prev.heures;
   const maxi = Math.max(...heures.map((x) => x.consommation_mw));
@@ -35,7 +35,7 @@ export default function PanneauDemain() {
   const [d, f] = creneau ? [h(creneau.debut), h(creneau.fin) || 24] : [-1, -1];
 
   return (
-    <div className="panneau w-[340px] p-5">
+    <div className="panneau w-full md:w-[340px] p-5">
       <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300/80">Demain, selon notre modèle</div>
       <div className="mt-0.5 text-xs capitalize text-slate-400">{jourTexte(prev.jour)}</div>
 

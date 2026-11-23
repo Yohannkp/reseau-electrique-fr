@@ -5,6 +5,23 @@
   --font-mono: var(--font-mono-app);
 }
 
+/* Socle mobile : pas de flash gris au toucher, pas de « tirer pour rafraîchir » sur une app plein écran,
+   pas de grossissement automatique du texte en paysage. */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+button, a, select, [role="button"] {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* iOS zoome sur un champ en dessous de 16 px et ne dézoome pas */
+@media (pointer: coarse) {
+  select, input, textarea { font-size: 16px; }
+}
+
 body {
   background: #05070d;
   color: #e2e8f0;

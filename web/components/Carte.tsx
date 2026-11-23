@@ -15,7 +15,9 @@ import { arc, couleurSocle, couleurSolde, EXPORT, FILIERES, gw, IMPORT, INTERCON
 setWorkerUrl(`${BASE}/maplibre-gl-worker.mjs`);
 
 const FOND = "https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json";
-const VUE_INITIALE: MapViewState = { longitude: 2.3, latitude: 45.75, zoom: 5.22, pitch: 52, bearing: -14 };
+const VUE_INITIALE: MapViewState = { longitude: 3.7, latitude: 45.75, zoom: 5.18, pitch: 52, bearing: -14 };
+// téléphone en portrait : la France doit tenir dans ~390 px de large, entre le bandeau du haut et la frise
+const VUE_COMPACTE: MapViewState = { longitude: 3.7, latitude: 44.5, zoom: 3.92, pitch: 48, bearing: -10 };
 
 // Lumière rasante venue du sud-ouest, comme un soleil de fin d'après-midi : les reliefs se lisent par leurs ombres.
 const LUMIERE = new LightingEffect({
@@ -43,10 +45,14 @@ interface Props {
   i: number;
   rotation: boolean;
   onSurvol: (s: Survol | null) => void;
+  compacte?: boolean;
 }
 
-export default function Carte({ geo, regions, national, i, rotation, onSurvol }: Props) {
-  const [vue, setVue] = useState<MapViewState>(VUE_INITIALE);
+export default function Carte({ geo, regions, national, i, rotation, onSurvol, compacte = false }: Props) {
+  const depart = compacte ? VUE_COMPACTE : VUE_INITIALE;
+  const [vue, setVue] = useState<MapViewState>(depart);
+  const departRef = useRef(depart);
+
   const [t, setT] = useState(0);
   const phase = useRef(0);
   const rotationRef = useRef(rotation);
@@ -63,7 +69,7 @@ export default function Carte({ geo, regions, national, i, rotation, onSurvol }:
       // pendant la lecture, la caméra se balance doucement autour de la vue de départ, sans jamais désorienter
       if (rotationRef.current) {
         phase.current += dt * 0.18;
-        setVue((v) => ({ ...v, bearing: (VUE_INITIALE.bearing ?? 0) + 14 * Math.sin(phase.current) }));
+        setVue((v) => ({ ...v, bearing: (departRef.current.bearing ?? 0) + 14 * Math.sin(phase.current) }));
       }
       id = requestAnimationFrame(boucle);
     };
@@ -240,14 +246,14 @@ export default function Carte({ geo, regions, national, i, rotation, onSurvol }:
       getPosition: (d) => [...INTERCONNEXIONS[d.cle].etiquette, 0],
       getText: (d) => `${d.nom}\n${d.mw >= 0 ? "export" : "import"} ${gw(Math.abs(d.mw))} GW`,
       getColor: (d) => [...d.couleur, 255],
-      getSize: 14,
+      getSize: compacte ? 10 : 14,
       characterSet: "auto", // sinon « · » et les accents manquent dans l'atlas de la police
       background: true,
       getBackgroundColor: [8, 12, 22, 215],
       getBorderColor: (d) => [...d.couleur, 90],
       getBorderWidth: 1,
       backgroundBorderRadius: 10,
-      backgroundPadding: [10, 6],
+      backgroundPadding: compacte ? [6, 4] : [10, 6],
       fontFamily: "Inter, system-ui, sans-serif",
       fontWeight: 600,
       lineHeight: 1.3,

@@ -45,7 +45,7 @@ function dateCourte(jour: string) {
 }
 
 export default function PanneauNational({ n, i, direct, jour }: { n: DonneesNational | null; i: number; direct: boolean; jour: string | null }) {
-  if (!n) return <div className="panneau w-[330px] p-5 text-sm text-slate-400">Chargement…</div>;
+  if (!n) return <div className="panneau w-full md:w-[330px] p-5 text-sm text-slate-400">Chargement…</div>;
   const conso = n.consommation_mw[i];
   const prev = n.prevision_j1_mw[i];
   const co2 = n.taux_co2_g_kwh[i];
@@ -55,7 +55,7 @@ export default function PanneauNational({ n, i, direct, jour }: { n: DonneesNati
   const total = mix.reduce((s, m) => s + m.mw, 0);
 
   return (
-    <div className="panneau w-[330px] p-5">
+    <div className="panneau w-full md:w-[330px] p-5">
       {direct ? (
         <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
           <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" /><span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" /></span>

@@ -24,7 +24,7 @@ export default function ModeIngenieur({ onFermer }: { onFermer: () => void }) {
   }, []);
 
   return (
-    <aside className="panneau pointer-events-auto absolute right-6 top-20 bottom-[150px] z-30 w-[420px] overflow-y-auto p-5 font-mono text-[12px]">
+    <aside className="panneau pointer-events-auto fixed inset-x-2 bottom-2 top-[calc(max(12px,env(safe-area-inset-top))+44px)] z-50 overflow-y-auto overscroll-contain p-4 font-mono text-[12px] md:absolute md:inset-x-auto md:right-6 md:top-20 md:bottom-[150px] md:w-[420px] md:p-5">
       <div className="flex items-center justify-between">
         <div className="font-sans text-[11px] font-semibold uppercase tracking-[0.18em] text-fuchsia-300/90">Mode ingénieur</div>
         <button onClick={onFermer} className="text-slate-400 hover:text-white" aria-label="Fermer">✕</button>
