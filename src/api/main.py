@@ -39,7 +39,7 @@ def charger_modeles() -> None:
         version = client.get_model_version_by_alias(nom, "production")
         etat[cible] = {
             "modele": mlflow.lightgbm.load_model(f"models:/{nom}@production"),
-            "version": version.version,
+            "version": str(version.version),  # texte via le serveur MLflow, entier via SQLite (version en ligne)
             # cible relative : le modèle prévoit l'écart au niveau de la matinée de la veille
             "relative": version.tags.get("cible_relative") == "1",
         }
