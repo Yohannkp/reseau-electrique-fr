@@ -64,8 +64,8 @@ export default function ModeIngenieur({ onFermer }: { onFermer: () => void }) {
           </section>
 
           <section>
-            <h3 className="mb-1.5 font-sans text-xs text-slate-400">Orchestration (Airflow)</h3>
-            {p.airflow.length === 0 && <div className="text-slate-500">Airflow injoignable</div>}
+            <h3 className="mb-1.5 font-sans text-xs text-slate-400">Orchestration ({p.orchestrateur ?? "Airflow"})</h3>
+            {p.airflow.length === 0 && <div className="text-slate-500">{p.orchestrateur ? "aucune étape mesurée" : "Airflow injoignable"}</div>}
             {p.airflow.map((d) => (
               <div key={d.dag} className="flex items-center gap-2 py-0.5">
                 <span className={pastille(d.etat === "success", d.etat === "running" || d.etat === "queued")} />

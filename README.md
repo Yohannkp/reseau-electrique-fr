@@ -4,6 +4,8 @@ Pipeline de données de bout en bout sur la consommation et la production d'éle
 par région et par quart d'heure, depuis 2013 et en continu, croisée avec la météo : collecte, orchestration,
 entrepôt testé, rapport Power BI, prévision J+1 servie par une API, et une carte 3D qui rejoue n'importe quelle heure.
 
+**▶ Voir l'application en ligne : https://yohannkp.github.io/reseau-electrique-fr/** (mise à jour chaque heure)
+
 ![Démonstration de l'application : direct, survol, lecture, pointe 2018, record solaire, prévision, mode ingénieur](docs/demo/demo.gif)
 
 *Parcours de l'application en 40 s : le direct, le survol d'une région, la lecture d'une journée, la pointe record de 2018
@@ -114,6 +116,31 @@ RTE ne publie pas de prévision du taux de CO₂ dans éCO2mix : c'est ce qui re
 **Choix de modélisation** : cible relative (écart au niveau de la matinée de la veille) plutôt que valeur brute, plus
 robuste aux changements de régime (le CO₂ est passé d'environ 50 à environ 20 g/kWh) ; perte L1 ; même nombre d'arbres
 pour le modèle final, réentraîné sur tout l'historique.
+
+## Deux façons de faire tourner le projet
+
+| | Version complète (Docker) | Version en ligne (GitHub Pages) |
+|---|---|---|
+| Orchestration | Airflow 3, 5 DAG (collecte toutes les 15 min) | workflow GitHub Actions chaque heure ([publication.yml](.github/workflows/publication.yml)) |
+| Modèles | serveur MLflow : suivi, registre, alias « production » | MLflow en mode fichier (SQLite), même code d'entraînement |
+| Données servies | API FastAPI | fichiers JSON générés par les fonctions de l'API ([publication/statique.py](src/publication/statique.py)) |
+| Carte 3D | toute l'histoire depuis 2013 | 14 derniers jours et journées remarquables |
+| Coût | un PC ou un serveur | 0 €, aucun serveur |
+
+La version en ligne réutilise exactement le même code : le générateur appelle les fonctions de l'API, ce qui dépend
+d'un paramètre est précalculé (meilleur créneau de 1 à 12 h, scénario de froid de −10 à +5 °C), et l'app lit des fichiers
+au lieu de l'API. Le mode ingénieur y affiche les étapes du workflow à la place des DAG.
+
+### Airflow et MLflow dans la version complète
+
+| | |
+|---|---|
+| ![Airflow : les 5 DAG](docs/outils/airflow-dags.png) | ![Airflow : graphe de eco2mix_temps_reel](docs/outils/airflow-graphe.png) |
+| *Les 5 DAG, leur planification et leurs dernières exécutions* | *collecte (une tâche par périmètre, en parallèle) puis dbt build* |
+| ![Airflow : historique des exécutions](docs/outils/airflow-historique.png) | ![Airflow : réentraînement](docs/outils/airflow-reentrainement.png) |
+| *Durée des 10 dernières exécutions, tâches les plus lentes* | *Chaque lundi : entraînement puis rechargement de l'API* |
+| ![MLflow : essais](docs/outils/mlflow-essais.png) | ![MLflow : registre du modèle conso_j1](docs/outils/mlflow-registre.png) |
+| *Chaque entraînement tracé, avec sa version de modèle* | *Registre : versions, alias « production », tag cible_relative* |
 
 ## Rapport Power BI
 

@@ -6,7 +6,7 @@ import Frise from "./Frise";
 import ModeIngenieur from "./ModeIngenieur";
 import PanneauDemain from "./PanneauDemain";
 import PanneauNational from "./PanneauNational";
-import { lire, type DonneesNational, type DonneesRegions, type Journee } from "@/lib/api";
+import { BASE, lire, STATIQUE, type DonneesNational, type DonneesRegions, type Journee } from "@/lib/api";
 import { gw } from "@/lib/visuel";
 
 /** Dernière heure renseignée à la fois au national et dans les régions : la journée en cours est incomplète,
@@ -20,7 +20,7 @@ function derniereHeure(n: DonneesNational, r: DonneesRegions) {
 
 export default function Tableau() {
   const [geo, setGeo] = useState<GeoJSON.FeatureCollection | null>(null);
-  const [periode, setPeriode] = useState<{ debut: string; fin: string } | null>(null);
+  const [periode, setPeriode] = useState<{ debut: string; fin: string; jours?: string[] } | null>(null);
   const [journees, setJournees] = useState<Journee[]>([]);
   const [jour, setJour] = useState<string | null>(null);
   const [regions, setRegions] = useState<DonneesRegions | null>(null);
@@ -35,10 +35,10 @@ export default function Tableau() {
   const heureDemandee = useRef<number | null>(null);
 
   useEffect(() => {
-    fetch("/regions.geojson").then((r) => r.json()).then(setGeo);
+    fetch(`${BASE}/regions.geojson`).then((r) => r.json()).then(setGeo);
     // lien direct vers un instant : ?jour=2018-02-28&heure=19 (sinon : aujourd'hui, dernière heure publiée)
     const lien = new URLSearchParams(window.location.search);
-    lire<{ debut: string; fin: string }>("/periode")
+    lire<{ debut: string; fin: string; jours?: string[] }>("/periode")
       .then((p) => { setPeriode(p); setJour(lien.get("jour") ?? p.fin); })
       .catch((e) => setErreur(String(e)));
     if (lien.get("heure")) heureDemandee.current = Number(lien.get("heure"));
@@ -69,7 +69,14 @@ export default function Tableau() {
     return () => clearInterval(id);
   }, [lecture, vitesse, national, regions]);
 
-  const choisirJour = (j: string) => { setJour(j); setI(0); setLecture(true); };
+  const choisirJour = (j: string) => {
+    if (periode?.jours && !periode.jours.includes(j)) {
+      setErreur(`Version en ligne : seuls les ${periode.jours.length} jours publiés sont disponibles (les 14 derniers et les journées remarquables). Toute l'histoire depuis 2013 est dans la version Docker.`);
+      return;
+    }
+    setErreur(null);
+    setJour(j); setI(0); setLecture(true);
+  };
   const direct = !!periode && jour === periode.fin;
   const revenirAuDirect = () => { if (periode) { setLecture(false); setJour(periode.fin); } };
   const r = survol && regions?.valeurs[survol.code];
@@ -94,6 +101,7 @@ export default function Tableau() {
           <span className="flex items-center gap-1.5"><span className="h-[2px] w-4 rounded bg-[rgb(64,224,255)] shadow-[0_0_6px_rgb(64,224,255)]" />région exportatrice</span>
           <span className="flex items-center gap-1.5"><span className="h-[2px] w-4 rounded bg-[rgb(255,150,60)] shadow-[0_0_6px_rgb(255,150,60)]" />importatrice</span>
           <span>· données RTE éCO2mix, heure par heure</span>
+          {STATIQUE && <span className="rounded-full border border-sky-400/30 px-2 py-0.5 text-sky-300/90">version en ligne · mise à jour chaque heure</span>}
         </p>
       </header>
 

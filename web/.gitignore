@@ -42,3 +42,6 @@ next-env.d.ts
 
 # copié depuis node_modules par predev/prebuild
 /public/maplibre-gl-worker.mjs
+
+# version en ligne : données publiées par le workflow, export statique
+/public/data/

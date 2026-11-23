@@ -13,3 +13,7 @@ logs/
 # Power BI : fichiers locaux (cache, signatures de sécurité)
 powerbi/**/.pbi/localSettings.json
 powerbi/**/.pbi/cache.abf
+mlruns/
+
+# fichiers de verrouillage d'Office (document ouvert)
+~$*

@@ -8,11 +8,11 @@ import { TripsLayer } from "@deck.gl/geo-layers";
 import { Map } from "react-map-gl/maplibre";
 import { setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { DonneesNational, DonneesRegions, Voisin } from "@/lib/api";
+import { BASE, type DonneesNational, type DonneesRegions, type Voisin } from "@/lib/api";
 import { arc, couleurSocle, couleurSolde, EXPORT, FILIERES, gw, IMPORT, INTERCONNEXIONS, M_PAR_MW, M_TOUR_PAR_MW, type RGB } from "@/lib/visuel";
 
 // Le worker de MapLibre est servi depuis public/ (copié par predev) : le bundler ne sait pas l'empaqueter.
-setWorkerUrl("/maplibre-gl-worker.mjs");
+setWorkerUrl(`${BASE}/maplibre-gl-worker.mjs`);
 
 const FOND = "https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json";
 const VUE_INITIALE: MapViewState = { longitude: 2.3, latitude: 45.75, zoom: 5.22, pitch: 52, bearing: -14 };

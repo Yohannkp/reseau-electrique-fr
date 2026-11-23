@@ -1,8 +1,35 @@
 // Accès à l'API FastAPI du projet (src/api). Les formes ci-dessous suivent le contrat des endpoints.
 
 export const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:18000";
+/** Version en ligne : pas d'API, des fichiers JSON publiés chaque heure par GitHub Actions (src/publication). */
+export const STATIQUE = process.env.NEXT_PUBLIC_STATIQUE === "1";
+export const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+/** Fichier publié qui contient la réponse d'un appel de l'API, et la clé à y lire si le fichier en regroupe plusieurs. */
+function fichierStatique(chemin: string): [string, string | null] {
+  const u = new URL(chemin, "http://x");
+  const q = (n: string) => u.searchParams.get(n) ?? "";
+  switch (u.pathname) {
+    case "/periode": return ["periode.json", null];
+    case "/journees-remarquables": return ["journees.json", null];
+    case "/carte/regions": return [`regions/${q("debut")}.json`, null];
+    case "/carte/national": return [`national/${q("debut")}.json`, null];
+    case "/prevision": return ["prevision.json", null];
+    case "/meilleur-creneau": return ["creneaux.json", String(Number(q("duree_h")))];
+    case "/scenario/froid": return ["scenarios.json", String(Number(q("delta_c")))];
+    case "/pipeline": return ["pipeline.json", null];
+    default: throw new Error(`${u.pathname} n'est pas publié dans la version en ligne`);
+  }
+}
 
 export async function lire<T>(chemin: string): Promise<T> {
+  if (STATIQUE) {
+    const [fichier, cle] = fichierStatique(chemin);
+    const r = await fetch(`${BASE}/data/${fichier}`, { cache: "no-store" });
+    if (!r.ok) throw new Error(`${fichier} : non publié dans la version en ligne`);
+    const json = await r.json();
+    return cle === null ? json : json[cle];
+  }
   const r = await fetch(API + chemin, { cache: "no-store" });
   if (!r.ok) throw new Error(`${chemin} : ${r.status} ${await r.text()}`);
   return r.json();
@@ -79,4 +106,6 @@ export interface Pipeline {
   };
   airflow: { dag: string; derniere_execution: string | null; etat: string | null; duree_s: number | null }[];
   modeles: { nom: string; version: string; erreur_test: string }[];
+  /** version en ligne : ce qui orchestre la publication à la place d'Airflow */
+  orchestrateur?: string;
 }

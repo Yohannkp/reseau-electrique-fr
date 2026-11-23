@@ -1,0 +1,109 @@
+# Version en ligne, sans serveur : chaque heure, GitHub Actions collecte, construit l'entrepôt, prévoit,
+# publie les données en JSON et déploie l'app 3D statique sur GitHub Pages.
+# Il joue le rôle d'Airflow ; MLflow tourne en mode fichier (SQLite) dans le cache des données.
+name: Publication
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: publication
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      DATA_DIR: ${{ github.workspace }}/data
+      PYTHONPATH: src
+      MLFLOW_TRACKING_URI: sqlite:///${{ github.workspace }}/data/mlflow.db
+      MLFLOW_DISABLE_AGENT_HINT: "1"
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      # Les données brutes et les modèles survivent d'une exécution à l'autre : on ne retélécharge
+      # l'historique depuis 2013 qu'une fois, puis chaque lundi.
+      - name: Données du dernier passage
+        uses: actions/cache@v4
+        with:
+          path: |
+            data
+            mlruns
+          key: donnees-${{ github.run_id }}
+          restore-keys: donnees-
+
+      - name: Collecte
+        run: |
+          debut=$SECONDS
+          if [ ! -d data/raw/eco2mix_def ] || [ "$(date -u +%u%H)" = "103" ]; then
+            python -m collecte consolide
+            python -m collecte meteo
+            python -c "from collecte import meteo; meteo.collecter_prevision_veille()"
+          fi
+          python -m collecte temps-reel
+          python -c "from collecte import meteo; meteo.collecter_prevision()"
+          python -c "from collecte import compactage; compactage.compacter()"
+          echo "ETAPES=collecte:$((SECONDS - debut))" >> "$GITHUB_ENV"
+
+      - name: Entrepôt (dbt build)
+        # un test en échec ne bloque pas la publication : le mode ingénieur l'affichera
+        continue-on-error: true
+        run: |
+          debut=$SECONDS
+          mkdir -p data/export
+          dbt build --project-dir dbt --profiles-dir dbt || echo "::warning::des tests dbt ont échoué"
+          echo "ETAPES=$ETAPES,dbt:$((SECONDS - debut))" >> "$GITHUB_ENV"
+
+      - name: Réentraînement (lundi, ou si aucun modèle)
+        run: |
+          debut=$SECONDS
+          if [ ! -f data/mlflow.db ] || [ "$(date -u +%u%H)" = "104" ]; then
+            python -m prevision.entrainement
+            echo "ETAPES=$ETAPES,entrainement:$((SECONDS - debut))" >> "$GITHUB_ENV"
+          fi
+
+      - name: Données statiques
+        run: python -m publication.statique
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: App statique
+        working-directory: web
+        env:
+          NEXT_PUBLIC_STATIQUE: "1"
+          NEXT_PUBLIC_BASE_PATH: /reseau-electrique-fr
+        run: npm ci && npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/out
+
+  deployer:
+    needs: publier
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - id: pages
+        uses: actions/deploy-pages@v4

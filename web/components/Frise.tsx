@@ -6,7 +6,7 @@ import { heureTexte, jourTexte } from "@/lib/visuel";
 
 interface Props {
   jour: string;
-  periode: { debut: string; fin: string } | null;
+  periode: { debut: string; fin: string; jours?: string[] } | null;
   heures: string[];
   i: number;
   lecture: boolean;
@@ -18,6 +18,15 @@ interface Props {
   onVitesse: (v: number) => void;
   direct: boolean;
   onDirect: () => void;
+}
+
+function voisin(jour: string, n: number, jours?: string[]) {
+  if (jours?.length) {
+    // version en ligne : seuls certains jours sont publiés
+    const autres = n < 0 ? jours.filter((j) => j < jour) : jours.filter((j) => j > jour);
+    return autres.length ? (n < 0 ? autres[autres.length - 1] : autres[0]) : jour;
+  }
+  return decaler(jour, n);
 }
 
 function decaler(jour: string, n: number) {
@@ -69,7 +78,7 @@ export default function Frise({ jour, periode, heures, i, lecture, vitesse, jour
         </button>
 
         <div className="flex shrink-0 items-center gap-1">
-          <button onClick={() => onJour(decaler(jour, -1))} disabled={!!periode && jour <= periode.debut} className="bouton-jour" aria-label="Jour précédent">‹</button>
+          <button onClick={() => onJour(voisin(jour, -1, periode?.jours))} disabled={!!periode && voisin(jour, -1, periode.jours) === jour} className="bouton-jour" aria-label="Jour précédent">‹</button>
           {/* le champ date natif suit la langue du navigateur : on affiche nous-mêmes jj/mm/aaaa et on ouvre son calendrier */}
           <div className="relative">
             <button
@@ -92,7 +101,7 @@ export default function Frise({ jour, periode, heures, i, lecture, vitesse, jour
               className="pointer-events-none absolute inset-0 opacity-0 [color-scheme:dark]"
             />
           </div>
-          <button onClick={() => onJour(decaler(jour, 1))} disabled={!!periode && jour >= periode.fin} className="bouton-jour" aria-label="Jour suivant">›</button>
+          <button onClick={() => onJour(voisin(jour, 1, periode?.jours))} disabled={!!periode && voisin(jour, 1, periode.jours) === jour} className="bouton-jour" aria-label="Jour suivant">›</button>
         </div>
 
         <div className="relative flex-1">
