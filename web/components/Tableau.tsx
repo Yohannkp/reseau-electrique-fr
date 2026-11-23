@@ -75,7 +75,11 @@ export default function Tableau() {
   const r = survol && regions?.valeurs[survol.code];
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-[#05070d] text-slate-100">
+    <main
+      className="relative h-screen w-screen overflow-hidden bg-[#05070d] text-slate-100"
+      // la souris passe de la carte à un panneau : deck.gl ne le voit pas, l'infobulle resterait affichée
+      onPointerMove={(e) => { if (survol && (e.target as HTMLElement).closest(".panneau")) setSurvol(null); }}
+    >
       <Carte geo={geo} regions={regions} national={national} i={i} rotation={lecture} onSurvol={setSurvol} />
 
       {/* voile de bord : l'œil reste au centre, les panneaux se détachent */}

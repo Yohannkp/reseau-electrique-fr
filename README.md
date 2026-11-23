@@ -4,10 +4,16 @@ Pipeline de données de bout en bout sur la consommation et la production d'éle
 par région et par quart d'heure, depuis 2013 et en continu, croisée avec la météo : collecte, orchestration,
 entrepôt testé, rapport Power BI, prévision J+1 servie par une API, et une carte 3D qui rejoue n'importe quelle heure.
 
-![Le pouls électrique de la France : pointe record du 28 février 2018 à 19 h](docs/app/2-pointe-2018.png)
+![Démonstration de l'application : direct, survol, lecture, pointe 2018, record solaire, prévision, mode ingénieur](docs/demo/demo.gif)
 
-*28 février 2018, 19 h : pointe record de 96,1 GW. La hauteur des régions suit leur consommation, les tours leur
-production par filière, la couleur leur solde (cyan : exportatrice, ambre : importatrice). Ce soir-là, la France importe 6,2 GW.*
+*Parcours de l'application en 40 s : le direct, le survol d'une région, la lecture d'une journée, la pointe record de 2018
+(la France importe), le record solaire (elle exporte), la prévision de demain et le scénario de froid, puis le mode ingénieur.
+[Version MP4 en pleine résolution](docs/demo/demo.mp4). La hauteur des régions suit leur consommation, les tours leur
+production par filière, le liseré leur solde (cyan : exportatrice, ambre : importatrice).*
+
+**Présentation détaillée** : [docs/presentation/reseau-electrique-fr.pptx](docs/presentation/reseau-electrique-fr.pptx),
+61 diapositives avec notes orateur. Pourquoi ce projet, mise en place étape par étape, code, choix techniques et
+alternatives écartées, pièges rencontrés, et 20 questions d'entretien avec leurs réponses.
 
 **Stack** : Python, Airflow 3, dbt + DuckDB, Parquet, LightGBM, MLflow, FastAPI, Docker Compose, Power BI (PBIP),
 Next.js + deck.gl, GitHub Actions.
