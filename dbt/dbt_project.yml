@@ -7,5 +7,4 @@ test-paths: ["tests"]
 
 models:
   reseau_electrique:
-    staging:
-      +materialized: table
+    +materialized: table

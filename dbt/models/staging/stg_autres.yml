@@ -1,0 +1,27 @@
+models:
+  - name: stg_eco2mix_national
+    description: Consommation, production par filière, taux de CO2 et prévisions RTE pour la France, par pas de temps.
+    columns:
+      - name: date_heure
+        data_tests: [unique, not_null]
+      - name: consommation_mw
+        data_tests: [not_null]
+      - name: prevision_j1_mw
+        description: Prévision de consommation publiée par RTE la veille. Référence à battre pour notre modèle.
+
+  - name: stg_meteo
+    description: Météo horaire par région (préfecture), en UTC.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "code_insee_region || '|' || cast(heure as varchar)"
+    columns:
+      - name: code_insee_region
+        data_tests: [not_null]
+      - name: heure
+        data_tests: [not_null]
+      - name: source
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [archive, prevision]

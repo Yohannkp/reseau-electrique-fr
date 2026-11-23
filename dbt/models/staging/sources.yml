@@ -1,12 +1,20 @@
 sources:
   - name: brut
-    description: Exports Parquet bruts d'éCO2mix (RTE via ODRÉ, Licence Ouverte Etalab v2.0), écrits par src/collecte.
+    description: Fichiers Parquet bruts écrits par src/collecte, jamais modifiés.
     config:
       meta:
         # union_by_name : les types varient d'un export à l'autre (une colonne peut arriver en texte), on convertit dans stg.
         external_location: "read_parquet('{{ env_var('DATA_DIR', '../data') }}/raw/{name}/**/*.parquet', filename = true, union_by_name = true)"
     tables:
       - name: eco2mix_tr
-        description: Temps réel, une collecte toutes les 15 min (fichiers qui se recouvrent).
+        description: éCO2mix régional temps réel (RTE via ODRÉ, Licence Ouverte v2.0), une collecte toutes les 15 min.
       - name: eco2mix_def
-        description: Historique consolidé et définitif depuis 2013, un fichier par année.
+        description: éCO2mix régional consolidé et définitif depuis 2013, un fichier par année.
+      - name: eco2mix_national_tr
+        description: éCO2mix national temps réel, avec taux de CO2 et prévisions de consommation de RTE.
+      - name: eco2mix_national_def
+        description: éCO2mix national consolidé depuis 2012.
+      - name: meteo_archive
+        description: Météo horaire par préfecture de région (Open-Meteo, réanalyse ERA5, CC BY 4.0), ~5 jours de retard.
+      - name: meteo_prevision
+        description: Météo horaire Open-Meteo, 7 jours passés et 2 jours de prévision, une collecte par heure.

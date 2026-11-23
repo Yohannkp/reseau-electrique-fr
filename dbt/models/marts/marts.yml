@@ -1,0 +1,25 @@
+models:
+  - name: fct_region_heure
+    description: Énergie et météo par région et par heure. Alimente la carte 3D et l'analyse régionale.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "code_insee_region || '|' || cast(heure as varchar)"
+    columns:
+      - name: heure
+        description: Début de l'heure, UTC.
+        data_tests: [not_null]
+      - name: heure_locale
+        description: Début de l'heure, heure de Paris (sans fuseau).
+      - name: solde_mw
+        description: Production moins consommation. Positif, la région exporte.
+
+  - name: fct_national_heure
+    description: Énergie, CO2, prévisions de RTE et température pondérée pour la France, par heure.
+    columns:
+      - name: heure
+        data_tests: [unique, not_null]
+      - name: ecart_prevision_j1_mw
+        description: Consommation réelle moins prévision de la veille de RTE.
+      - name: part_bas_carbone
+        description: Part du nucléaire et des renouvelables dans la production (0 à 1).

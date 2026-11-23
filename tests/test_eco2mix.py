@@ -58,10 +58,10 @@ def test_collecte_incrementale_avec_recouvrement(api, tmp_path):
     installer(parquet(tmp_path, "select timestamptz '2026-11-23 12:00:00+00' as date_heure, 4000 as consommation"))
     t = dt.datetime(2026, 11, 23, 12, 10, tzinfo=dt.UTC)
 
-    assert eco2mix.collecter_temps_reel(t) == 1
+    assert eco2mix.collecter_temps_reel(maintenant=t) == 1
     assert appels[-1] == "consommation is not null"  # première collecte : toute la fenêtre
 
-    eco2mix.collecter_temps_reel(t + dt.timedelta(minutes=15))
+    eco2mix.collecter_temps_reel(maintenant=t + dt.timedelta(minutes=15))
     assert appels[-1] == "consommation is not null and date_heure >= '2026-11-23T06:00:00Z'"
 
     etat = json.loads((tmp_path / "data/raw/eco2mix_tr/_etat.json").read_text())

@@ -24,8 +24,12 @@ from urllib3.util.retry import Retry
 log = logging.getLogger(__name__)
 
 API = "https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/{}/exports/parquet"
-TEMPS_REEL = "eco2mix-regional-tr"
-CONSOLIDE = "eco2mix-regional-cons-def"
+# périmètre : (jeu temps réel, jeu consolidé, dossier brut temps réel, dossier brut consolidé)
+# Le national ajoute le taux de CO2 et la prévision de consommation de RTE (J-1 et J).
+PERIMETRES = {
+    "regional": ("eco2mix-regional-tr", "eco2mix-regional-cons-def", "eco2mix_tr", "eco2mix_def"),
+    "national": ("eco2mix-national-tr", "eco2mix-national-cons-def", "eco2mix_national_tr", "eco2mix_national_def"),
+}
 PREMIERE_ANNEE = 2013
 # RTE complète et corrige les derniers quarts d'heure : on recollecte toujours les 6 dernières heures.
 RECOUVREMENT = dt.timedelta(hours=6)
@@ -67,37 +71,39 @@ def filtre_temps_reel(derniere: dt.datetime | None) -> str:
     return where
 
 
-def collecter_temps_reel(maintenant: dt.datetime | None = None) -> int:
+def collecter_temps_reel(perimetre: str = "regional", maintenant: dt.datetime | None = None) -> int:
     """Collecte incrémentale. Après une panne, rattrape tout seul tant que le trou tient dans la fenêtre de ~3 mois."""
     maintenant = maintenant or dt.datetime.now(dt.UTC)
-    racine = dossier_brut() / "eco2mix_tr"
+    dataset, _, dossier, _ = PERIMETRES[perimetre]
+    racine = dossier_brut() / dossier
     etat_f = racine / "_etat.json"
     derniere = None
     if etat_f.exists():
         derniere = dt.datetime.fromisoformat(json.loads(etat_f.read_text())["derniere_date_heure"])
 
     dest = racine / f"date_collecte={maintenant:%Y-%m-%d}" / f"{maintenant:%H%M%S}.parquet"
-    n = telecharger(TEMPS_REEL, filtre_temps_reel(derniere), dest)
+    n = telecharger(dataset, filtre_temps_reel(derniere), dest)
     if n:
         maxi = duckdb.sql("select max(date_heure) from read_parquet(?)", params=[str(dest)]).fetchall()[0][0]
         etat_f.write_text(json.dumps({"derniere_date_heure": maxi.isoformat(), "collecte": maintenant.isoformat()}))
-        log.info("temps réel : %s lignes, jusqu'à %s", n, maxi)
+        log.info("%s temps réel : %s lignes, jusqu'à %s", perimetre, n, maxi)
     else:
-        log.warning("temps réel : aucune ligne nouvelle (filtre : %s)", filtre_temps_reel(derniere))
+        log.warning("%s temps réel : aucune ligne nouvelle (filtre : %s)", perimetre, filtre_temps_reel(derniere))
     return n
 
 
-def collecter_consolide(aujourdhui: dt.date | None = None) -> int:
+def collecter_consolide(perimetre: str = "regional", aujourdhui: dt.date | None = None) -> int:
     """Charge l'historique consolidé par année. Les années closes déjà présentes ne sont pas retéléchargées ;
     l'année en cours et la précédente le sont, car RTE y ajoute les mois consolidés."""
+    _, dataset, _, dossier = PERIMETRES[perimetre]
     annee_courante = (aujourdhui or dt.date.today()).year
     total = 0
     for annee in range(PREMIERE_ANNEE - 1, annee_courante + 1):  # 2012 : le 1er janvier 2013 0 h Paris = 2012-12-31 23 h UTC
-        dest = dossier_brut() / "eco2mix_def" / f"annee={annee}.parquet"
+        dest = dossier_brut() / dossier / f"annee={annee}.parquet"
         if dest.exists() and annee < annee_courante - 1:
             continue
         where = f"date_heure >= '{annee}-01-01T00:00:00Z' and date_heure < '{annee + 1}-01-01T00:00:00Z'"
-        n = telecharger(CONSOLIDE, where, dest)
-        log.info("consolidé %s : %s lignes", annee, n)
+        n = telecharger(dataset, where, dest)
+        log.info("%s consolidé %s : %s lignes", perimetre, annee, n)
         total += n
     return total
