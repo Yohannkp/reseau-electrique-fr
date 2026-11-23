@@ -1,0 +1,11 @@
+name: reseau_electrique
+version: "0.1.0"
+profile: reseau_electrique
+
+model-paths: ["models"]
+test-paths: ["tests"]
+
+models:
+  reseau_electrique:
+    staging:
+      +materialized: table

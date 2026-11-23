@@ -1,0 +1,9 @@
+reseau_electrique:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DATA_DIR', '../data') }}/entrepot.duckdb"
+      threads: 2
+      settings:
+        TimeZone: UTC

@@ -1,0 +1,12 @@
+sources:
+  - name: brut
+    description: Exports Parquet bruts d'éCO2mix (RTE via ODRÉ, Licence Ouverte Etalab v2.0), écrits par src/collecte.
+    config:
+      meta:
+        # union_by_name : les types varient d'un export à l'autre (une colonne peut arriver en texte), on convertit dans stg.
+        external_location: "read_parquet('{{ env_var('DATA_DIR', '../data') }}/raw/{name}/**/*.parquet', filename = true, union_by_name = true)"
+    tables:
+      - name: eco2mix_tr
+        description: Temps réel, une collecte toutes les 15 min (fichiers qui se recouvrent).
+      - name: eco2mix_def
+        description: Historique consolidé et définitif depuis 2013, un fichier par année.
