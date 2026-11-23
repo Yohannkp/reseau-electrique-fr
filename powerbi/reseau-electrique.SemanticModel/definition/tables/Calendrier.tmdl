@@ -1,0 +1,67 @@
+/// Table de dates, de 2012 à la fin de l'année en cours.
+table Calendrier
+	lineageTag: b048b05b-80ec-45f4-a0be-8a1389281781
+	dataCategory: Time
+
+	column Date
+		dataType: dateTime
+		isKey
+		formatString: dd/mm/yyyy
+		lineageTag: 90db3dc9-aaad-4bdd-a2ff-562c8588afe2
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Date]
+
+	column Année
+		dataType: int64
+		formatString: 0
+		lineageTag: f1393804-f797-4c34-b0c8-e7f549e09ff4
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Année]
+
+	column Mois
+		dataType: dateTime
+		formatString: mmm yyyy
+		lineageTag: 8ab95bef-99bb-41ba-a6b8-a6e185991acd
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Mois]
+
+	column Saison
+		dataType: string
+		lineageTag: 81b7b63d-cc2c-439d-9efd-8bdda08b8856
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Saison]
+		sortByColumn: 'Ordre saison'
+
+	column 'Ordre saison'
+		dataType: int64
+		isHidden
+		lineageTag: 3d3df5ea-8ba4-4f71-a7e6-46d3ff6a5d41
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Ordre saison]
+
+	column Période
+		dataType: string
+		lineageTag: 17570ebc-ccc3-43f6-a65a-095a4af3fe0c
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Période]
+
+	partition Calendrier = calculated
+		mode: import
+		source =
+				VAR d = CALENDAR ( DATE ( 2012, 1, 1 ), DATE ( YEAR ( TODAY () ), 12, 31 ) )
+				RETURN
+				    ADDCOLUMNS (
+				        d,
+				        "Année", YEAR ( [Date] ),
+				        "Mois", DATE ( YEAR ( [Date] ), MONTH ( [Date] ), 1 ),
+				        "Ordre saison", SWITCH ( TRUE (), MONTH ( [Date] ) IN { 12, 1, 2 }, 1, MONTH ( [Date] ) IN { 3, 4, 5 }, 2, MONTH ( [Date] ) IN { 6, 7, 8 }, 3, 4 ),
+				        "Saison", SWITCH ( TRUE (), MONTH ( [Date] ) IN { 12, 1, 2 }, "Hiver", MONTH ( [Date] ) IN { 3, 4, 5 }, "Printemps", MONTH ( [Date] ) IN { 6, 7, 8 }, "Été", "Automne" ),
+				        "Période", IF ( YEAR ( [Date] ) >= 2023, "Depuis 2023", "2012-2022" )
+				    )
+

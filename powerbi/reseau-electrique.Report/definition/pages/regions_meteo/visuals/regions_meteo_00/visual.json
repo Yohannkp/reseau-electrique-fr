@@ -1,0 +1,48 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "regions_meteo_00",
+  "position": {
+    "x": 20,
+    "y": 10,
+    "z": 0,
+    "height": 75,
+    "width": 1000,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Dans l'Ouest et le Sud, chaque degré en moins pèse presque deux fois plus",
+                    "textStyle": {
+                      "fontSize": "18pt",
+                      "color": "#12239E",
+                      "fontWeight": "bold"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Thermosensibilité : consommation supplémentaire pour chaque degré en moins, jours à moins de 15 °C (régression sur les moyennes journalières).",
+                    "textStyle": {
+                      "fontSize": "10pt",
+                      "color": "#605E5C"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

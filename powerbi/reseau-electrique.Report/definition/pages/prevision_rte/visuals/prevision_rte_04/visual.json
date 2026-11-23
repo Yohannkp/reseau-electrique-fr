@@ -1,0 +1,82 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "prevision_rte_04",
+  "position": {
+    "x": 650,
+    "y": 410,
+    "z": 4,
+    "height": 290,
+    "width": 610,
+    "tabOrder": 4
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Ce que montrent les données",
+                    "textStyle": {
+                      "fontSize": "13pt",
+                      "color": "#12239E",
+                      "fontWeight": "bold"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Le biais est le même pour la prévision de la veille et celle du jour : ce n'est donc ni la météo ni l'horizon de prévision.",
+                    "textStyle": {
+                      "fontSize": "10pt",
+                      "color": "#252423"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Il culmine l'après-midi et au printemps, et disparaît sur les données temps réel (depuis septembre 2026, pas encore consolidées).",
+                    "textStyle": {
+                      "fontSize": "10pt",
+                      "color": "#252423"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Hypothèse : RTE prévoit la consommation mesurée en temps réel, que la consolidation revoit ensuite à la hausse. À vérifier quand RTE consolidera l'automne 2026, que notre pipeline garde en version temps réel.",
+                    "textStyle": {
+                      "fontSize": "10pt",
+                      "color": "#252423"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Conséquence : un modèle de prévision doit être jugé sur la donnée qu'il cherche à prévoir, sinon on lui impute 1 GW d'erreur qui n'en est pas une.",
+                    "textStyle": {
+                      "fontSize": "10pt",
+                      "color": "#252423",
+                      "fontWeight": "bold"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

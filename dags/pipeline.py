@@ -31,7 +31,7 @@ def eco2mix_temps_reel():
     @task.bash
     def dbt_build() -> str:
         # Les tests dbt (doublons, valeurs absurdes, collecte en retard) font échouer la tâche : c'est l'alerte.
-        return "/home/airflow/dbt/bin/dbt build --project-dir /opt/airflow/dbt --profiles-dir /opt/airflow/dbt"
+        return "mkdir -p /opt/airflow/data/export && /home/airflow/dbt/bin/dbt build --project-dir /opt/airflow/dbt --profiles-dir /opt/airflow/dbt"
 
     collecte.expand(perimetre=["regional", "national"]) >> dbt_build()
 

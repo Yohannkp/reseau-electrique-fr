@@ -1,0 +1,253 @@
+/// France métropolitaine hors Corse, une ligne par heure (marts dbt fct_national_heure).
+table National
+	lineageTag: e7d6da1c-45d8-44be-9cd2-2474b95c36b8
+
+	measure 'Consommation (TWh)' = DIVIDE ( SUM ( National[consommation_mw] ), 1000000 )
+		formatString: #,0.0
+		lineageTag: 7938daf0-f379-4e9f-93fc-efad3b8c892d
+
+	measure 'Consommation moyenne (GW)' = DIVIDE ( AVERAGE ( National[consommation_mw] ), 1000 )
+		formatString: #,0.0
+		lineageTag: 9efc8c73-a391-4a00-ad54-08f17c682779
+
+	measure 'Pointe (GW)' = DIVIDE ( MAX ( National[consommation_mw] ), 1000 )
+		formatString: #,0.0
+		lineageTag: 6a0ab154-a4cb-4017-9e76-74355daf53cb
+
+	measure 'CO2 moyen (g/kWh)' =
+			-- moyenne pondérée par la consommation : une heure de pointe pèse plus qu'une heure creuse
+			VAR t = FILTER ( National, NOT ISBLANK ( National[taux_co2_g_kwh] ) )
+			RETURN DIVIDE ( SUMX ( t, National[taux_co2_g_kwh] * National[consommation_mw] ), SUMX ( t, National[consommation_mw] ) )
+		formatString: 0.0
+		lineageTag: 75a792fd-d773-45e7-8fa1-05bc4fc518ad
+
+	measure 'Part bas carbone' =
+			DIVIDE (
+			    SUM ( National[production_mw] ) - SUM ( National[gaz_mw] ) - SUM ( National[charbon_mw] ) - SUM ( National[fioul_mw] ),
+			    SUM ( National[production_mw] )
+			)
+		formatString: 0.0%
+		lineageTag: 775e7099-5083-416e-ae4a-bd682c86f71a
+
+	measure 'Température moyenne (°C)' = AVERAGE ( National[temperature_ponderee_c] )
+		formatString: 0.0
+		lineageTag: c4dc9541-38c4-4dd1-965c-a9d6d990c7eb
+
+	measure 'Nucléaire (TWh)' = DIVIDE ( SUM ( National[nucleaire_mw] ), 1000000 )
+		formatString: #,0.0
+		displayFolder: Production
+		lineageTag: 750da426-1426-42af-8c2d-fd55a8704cff
+
+	measure 'Hydraulique (TWh)' = DIVIDE ( SUM ( National[hydraulique_mw] ), 1000000 )
+		formatString: #,0.0
+		displayFolder: Production
+		lineageTag: 51da25ff-9eff-4434-a0cf-5d6a0b09d9c4
+
+	measure 'Éolien (TWh)' = DIVIDE ( SUM ( National[eolien_mw] ), 1000000 )
+		formatString: #,0.0
+		displayFolder: Production
+		lineageTag: 230cb963-d6f5-4b5a-b1f4-0a1a31dead83
+
+	measure 'Solaire (TWh)' = DIVIDE ( SUM ( National[solaire_mw] ), 1000000 )
+		formatString: #,0.0
+		displayFolder: Production
+		lineageTag: 5688c400-a8c3-4ddc-933b-19b8ed5625c3
+
+	measure 'Bioénergies (TWh)' = DIVIDE ( SUM ( National[bioenergies_mw] ), 1000000 )
+		formatString: #,0.0
+		displayFolder: Production
+		lineageTag: a8c17a8a-3f25-4033-a338-dfbe6d7cd485
+
+	measure 'Gaz (TWh)' = DIVIDE ( SUM ( National[gaz_mw] ), 1000000 )
+		formatString: #,0.0
+		displayFolder: Production
+		lineageTag: 38c6fae6-9b25-403e-a607-bca54d9ac6b2
+
+	measure 'Charbon et fioul (TWh)' = DIVIDE ( SUM ( National[charbon_mw] ) + SUM ( National[fioul_mw] ), 1000000 )
+		formatString: #,0.0
+		displayFolder: Production
+		lineageTag: 619dc645-1f52-42ce-9f36-7197be44e0c6
+
+	measure 'Erreur prévision J-1 (%)' =
+			-- erreur absolue moyenne en pourcentage (MAPE) de la prévision publiée la veille par RTE
+			AVERAGEX ( FILTER ( National, NOT ISBLANK ( National[prevision_j1_mw] ) ), ABS ( National[ecart_prevision_j1_mw] ) / National[consommation_mw] )
+		formatString: 0.00%
+		displayFolder: Prévision RTE
+		lineageTag: 54ef4d52-ade8-4ea7-9bd9-e97ff5c7a3e7
+
+	measure 'Biais prévision J-1 (GW)' =
+			-- > 0 : la consommation réelle dépasse la prévision de la veille
+			DIVIDE ( AVERAGEX ( FILTER ( National, NOT ISBLANK ( National[prevision_j1_mw] ) ), National[ecart_prevision_j1_mw] ), 1000 )
+		formatString: 0.00
+		displayFolder: Prévision RTE
+		lineageTag: 796ffbd7-06a8-4055-8962-3ff693b2ecb5
+
+	measure 'Biais prévision J (GW)' =
+			DIVIDE (
+			    AVERAGEX (
+			        FILTER ( National, NOT ISBLANK ( National[prevision_j_mw] ) ),
+			        National[consommation_mw] - National[prevision_j_mw]
+			    ),
+			    1000
+			)
+		formatString: 0.00
+		displayFolder: Prévision RTE
+		lineageTag: 75b8d9ca-571a-45b9-aa99-768522c62afd
+
+	column heure_locale
+		dataType: dateTime
+		formatString: dd/mm/yyyy hh:nn
+		lineageTag: c11e138e-777c-4ad9-aa49-ff2b8302a3d2
+		summarizeBy: none
+		sourceColumn: heure_locale
+
+	column date_locale
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 8b0122a4-b01a-4383-9fd9-dcde89dd2771
+		summarizeBy: none
+		sourceColumn: date_locale
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column heure_du_jour
+		dataType: int64
+		formatString: 0
+		lineageTag: f94c084f-5153-419e-8ebb-e62f1aa0e047
+		summarizeBy: none
+		sourceColumn: heure_du_jour
+
+	column consommation_mw
+		dataType: double
+		formatString: #,0
+		lineageTag: e73011eb-74b1-46a5-91cd-5fd94ecf990d
+		summarizeBy: none
+		sourceColumn: consommation_mw
+
+	column prevision_j1_mw
+		dataType: double
+		formatString: #,0
+		lineageTag: b2e7fe0c-961d-4711-97a1-38f1f1c404c4
+		summarizeBy: none
+		sourceColumn: prevision_j1_mw
+
+	column prevision_j_mw
+		dataType: double
+		formatString: #,0
+		lineageTag: 395a797d-ad20-47be-9d18-404dc5f34ce3
+		summarizeBy: none
+		sourceColumn: prevision_j_mw
+
+	column ecart_prevision_j1_mw
+		dataType: double
+		formatString: #,0
+		lineageTag: 6a30ef0c-5c3a-4963-a75b-a1da290f2935
+		summarizeBy: none
+		sourceColumn: ecart_prevision_j1_mw
+
+	column taux_co2_g_kwh
+		dataType: double
+		formatString: 0
+		lineageTag: 7740c24f-5e67-4fba-8c5f-c18c663b4bcb
+		summarizeBy: none
+		sourceColumn: taux_co2_g_kwh
+
+	column nucleaire_mw
+		dataType: double
+		formatString: #,0
+		lineageTag: 95106c83-8d62-4057-8ec3-b554a30902d6
+		summarizeBy: none
+		sourceColumn: nucleaire_mw
+
+	column eolien_mw
+		dataType: double
+		formatString: #,0
+		lineageTag: f312dcee-00f1-46c0-a05a-da6ec2109a8d
+		summarizeBy: none
+		sourceColumn: eolien_mw
+
+	column solaire_mw
+		dataType: double
+		formatString: #,0
+		lineageTag: ff9b2fff-d3d3-44ba-bb0b-6a3bff78033b
+		summarizeBy: none
+		sourceColumn: solaire_mw
+
+	column hydraulique_mw
+		dataType: double
+		formatString: #,0
+		lineageTag: bcc25528-7062-4cc4-9476-f47aafc79211
+		summarizeBy: none
+		sourceColumn: hydraulique_mw
+
+	column bioenergies_mw
+		dataType: double
+		formatString: #,0
+		lineageTag: 709c9259-be1b-4084-a799-00c21d9a2037
+		summarizeBy: none
+		sourceColumn: bioenergies_mw
+
+	column gaz_mw
+		dataType: double
+		formatString: #,0
+		lineageTag: 24cf5217-5e9d-43b2-97b3-f1749e62f982
+		summarizeBy: none
+		sourceColumn: gaz_mw
+
+	column charbon_mw
+		dataType: double
+		formatString: #,0
+		lineageTag: aabf4def-7783-4bce-af66-6caeb730652f
+		summarizeBy: none
+		sourceColumn: charbon_mw
+
+	column fioul_mw
+		dataType: double
+		formatString: #,0
+		lineageTag: faea75a1-c4d3-44db-97ee-8e5cd3c52f01
+		summarizeBy: none
+		sourceColumn: fioul_mw
+
+	column production_mw
+		dataType: double
+		formatString: #,0
+		lineageTag: 5a6e6d4f-6de0-42b9-ae72-a34a611b7cf0
+		summarizeBy: none
+		sourceColumn: production_mw
+
+	column part_bas_carbone
+		dataType: double
+		formatString: 0.0%
+		lineageTag: 8cb98144-9fd2-4295-b5fe-11c12fdaa4f6
+		summarizeBy: none
+		sourceColumn: part_bas_carbone
+
+	column temperature_ponderee_c
+		dataType: double
+		formatString: 0.0
+		lineageTag: 6efe6733-de1c-4f12-b091-1f3e07191bb2
+		summarizeBy: none
+		sourceColumn: temperature_ponderee_c
+
+	column nb_regions
+		dataType: int64
+		formatString: 0
+		lineageTag: 15c91626-161b-4db3-b0af-636ac2b8099c
+		summarizeBy: none
+		sourceColumn: nb_regions
+
+	column source
+		dataType: string
+		lineageTag: b6aa9076-04a5-43ce-b5c9-5a85458f6910
+		summarizeBy: none
+		sourceColumn: source
+
+	partition National = m
+		mode: import
+		source =
+				let
+				    Source = Parquet.Document(File.Contents(DossierExport & "fct_national_heure.parquet")),
+				    Colonnes = Table.SelectColumns(Source, {"heure_locale", "date_locale", "heure_du_jour", "consommation_mw", "prevision_j1_mw", "prevision_j_mw", "ecart_prevision_j1_mw", "taux_co2_g_kwh", "nucleaire_mw", "eolien_mw", "solaire_mw", "hydraulique_mw", "bioenergies_mw", "gaz_mw", "charbon_mw", "fioul_mw", "production_mw", "part_bas_carbone", "temperature_ponderee_c", "nb_regions", "source"})
+				in
+				    Colonnes
+

@@ -21,6 +21,8 @@ with energie as (
 select
     e.*,
     timezone('Europe/Paris', e.heure) as heure_locale,
+    cast(heure_locale as date) as date_locale,
+    hour(heure_locale) as heure_du_jour,
     coalesce(e.nucleaire_mw, 0) + coalesce(e.eolien_mw, 0) + coalesce(e.solaire_mw, 0)
         + coalesce(e.hydraulique_mw, 0) + coalesce(e.thermique_mw, 0) + coalesce(e.bioenergies_mw, 0) as production_mw,
     production_mw - e.consommation_mw as solde_mw,  -- > 0 : la région exporte vers ses voisines

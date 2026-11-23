@@ -23,3 +23,13 @@ models:
         description: Consommation réelle moins prévision de la veille de RTE.
       - name: part_bas_carbone
         description: Part du nucléaire et des renouvelables dans la production (0 à 1).
+
+  - name: fct_region_jour
+    description: Moyennes journalières par région (MW, °C). Utilisée par le rapport Power BI.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "code_insee_region || '|' || cast(date_locale as varchar)"
+    columns:
+      - name: nb_heures
+        description: Heures disponibles dans la journée (24, 23 ou 25 aux changements d'heure, moins pour le jour en cours).

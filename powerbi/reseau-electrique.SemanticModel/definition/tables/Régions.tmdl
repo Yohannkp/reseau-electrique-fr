@@ -1,0 +1,45 @@
+/// Les 12 régions de France métropolitaine hors Corse (seed dbt).
+table Régions
+	lineageTag: f5c5cb05-76df-4492-87c5-555e6ebcbb0a
+
+	column code_insee_region
+		dataType: string
+		isKey
+		lineageTag: 404fa72a-949b-4ecc-a121-3cd9e90a5371
+		summarizeBy: none
+		sourceColumn: code_insee_region
+
+	column Région
+		dataType: string
+		lineageTag: 7efb776a-8fd5-431c-af5c-873e5baa4bef
+		summarizeBy: none
+		sourceColumn: region
+
+	column Préfecture
+		dataType: string
+		lineageTag: 72e88bc7-e1d1-4a69-b3dd-d9caf89742b8
+		summarizeBy: none
+		sourceColumn: prefecture
+
+	column Latitude
+		dataType: double
+		lineageTag: b0f98a58-d33f-43fb-a3f6-2a3a1407a60c
+		dataCategory: Latitude
+		summarizeBy: none
+		sourceColumn: latitude
+
+	column Longitude
+		dataType: double
+		lineageTag: c46a9791-4017-4676-b7f4-73f2370a3ac8
+		dataCategory: Longitude
+		summarizeBy: none
+		sourceColumn: longitude
+
+	partition Régions = m
+		mode: import
+		source =
+				let
+				    Source = Parquet.Document(File.Contents(DossierExport & "dim_region.parquet"))
+				in
+				    Source
+

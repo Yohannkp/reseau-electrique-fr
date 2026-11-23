@@ -7,9 +7,11 @@
 
 from __future__ import annotations
 
+import csv
 import datetime as dt
 import json
 import logging
+import pathlib
 
 import duckdb
 
@@ -21,21 +23,9 @@ ARCHIVE = "https://archive-api.open-meteo.com/v1/archive"
 PREVISION = "https://api.open-meteo.com/v1/forecast"
 VARIABLES = ["temperature_2m", "shortwave_radiation", "wind_speed_100m"]  # chauffage, solaire, éolien
 
-# code INSEE de la région : (préfecture, latitude, longitude)
-REGIONS = {
-    "11": ("Paris", 48.857, 2.352),
-    "24": ("Orléans", 47.903, 1.909),
-    "27": ("Dijon", 47.322, 5.041),
-    "28": ("Rouen", 49.443, 1.099),
-    "32": ("Lille", 50.629, 3.057),
-    "44": ("Strasbourg", 48.573, 7.752),
-    "52": ("Nantes", 47.218, -1.554),
-    "53": ("Rennes", 48.117, -1.678),
-    "75": ("Bordeaux", 44.838, -0.579),
-    "76": ("Toulouse", 43.605, 1.444),
-    "84": ("Lyon", 45.764, 4.836),
-    "93": ("Marseille", 43.296, 5.370),
-}
+# code INSEE de la région : (préfecture, latitude, longitude). Source unique : le seed dbt des régions.
+with open(pathlib.Path(__file__).parents[2] / "dbt" / "seeds" / "regions.csv", encoding="utf-8") as f:
+    REGIONS = {r["code_insee_region"]: (r["prefecture"], float(r["latitude"]), float(r["longitude"])) for r in csv.DictReader(f)}
 
 
 def _requete(url: str, **params) -> list[dict]:

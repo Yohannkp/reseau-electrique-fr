@@ -9,3 +9,7 @@ dbt/.user.yml
 logs/
 .env
 .context/
+
+# Power BI : fichiers locaux (cache, signatures de sécurité)
+powerbi/**/.pbi/localSettings.json
+powerbi/**/.pbi/cache.abf

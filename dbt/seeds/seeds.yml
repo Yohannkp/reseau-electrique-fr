@@ -1,0 +1,8 @@
+seeds:
+  - name: regions
+    description: Les 12 régions de France métropolitaine hors Corse, avec le point météo retenu (préfecture). Lu aussi par src/collecte/meteo.py.
+    config:
+      column_types: {code_insee_region: varchar}
+    columns:
+      - name: code_insee_region
+        data_tests: [unique, not_null]

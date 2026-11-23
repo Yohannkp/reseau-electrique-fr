@@ -8,3 +8,6 @@ test-paths: ["tests"]
 models:
   reseau_electrique:
     +materialized: table
+    # Les marts sont écrits en Parquet dans data/export, lus par le rapport Power BI.
+    marts:
+      +materialized: external

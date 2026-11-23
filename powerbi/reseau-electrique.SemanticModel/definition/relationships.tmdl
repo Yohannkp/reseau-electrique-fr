@@ -1,0 +1,12 @@
+relationship national_calendrier
+	fromColumn: National.date_locale
+	toColumn: Calendrier.Date
+
+relationship region_calendrier
+	fromColumn: 'Région jour'.date_locale
+	toColumn: Calendrier.Date
+
+relationship region_regions
+	fromColumn: 'Région jour'.code_insee_region
+	toColumn: Régions.code_insee_region
+

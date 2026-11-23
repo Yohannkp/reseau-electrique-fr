@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "reseau-electrique"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "c0b4f656-e18b-4366-851d-1eed1b428339"
+  }
+}

@@ -15,7 +15,8 @@ with national as (
         avg(gaz_mw) as gaz_mw,
         avg(charbon_mw) as charbon_mw,
         avg(fioul_mw) as fioul_mw,
-        avg(echanges_physiques_mw) as echanges_physiques_mw
+        avg(echanges_physiques_mw) as echanges_physiques_mw,
+        max(source) as source  -- 'temps_reel' si au moins un pas de l'heure est provisoire
     from {{ ref('stg_eco2mix_national') }}
     group by date_trunc('hour', date_heure)
 ),
@@ -35,6 +36,8 @@ temperature as (
 select
     n.*,
     timezone('Europe/Paris', n.heure) as heure_locale,
+    cast(heure_locale as date) as date_locale,
+    hour(heure_locale) as heure_du_jour,
     n.consommation_mw - n.prevision_j1_mw as ecart_prevision_j1_mw,
     coalesce(n.nucleaire_mw, 0) + coalesce(n.eolien_mw, 0) + coalesce(n.solaire_mw, 0) + coalesce(n.hydraulique_mw, 0)
         + coalesce(n.bioenergies_mw, 0) + coalesce(n.gaz_mw, 0) + coalesce(n.charbon_mw, 0) + coalesce(n.fioul_mw, 0)

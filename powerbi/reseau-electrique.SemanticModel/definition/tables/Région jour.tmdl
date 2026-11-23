@@ -1,0 +1,72 @@
+/// Moyennes journalières par région (marts dbt fct_region_jour).
+table 'Région jour'
+
+	measure 'Consommation régionale (TWh)' =
+			DIVIDE ( SUMX ( 'Région jour', 'Région jour'[consommation_mw] * 'Région jour'[nb_heures] ), 1000000 )
+		formatString: #,0.0
+
+	measure 'Solde moyen (GW)' =
+			DIVIDE ( AVERAGE ( 'Région jour'[solde_mw] ), 1000 )
+		formatString: #,0.00
+
+	measure 'Thermosensibilité (MW/°C)' =
+			-- MW consommés en plus pour chaque degré en moins, sur les jours complets à moins de 15 °C (régression linéaire)
+			VAR froid = FILTER ( 'Région jour', 'Région jour'[nb_heures] >= 23 && NOT ISBLANK ( 'Région jour'[temperature_c] ) && 'Région jour'[temperature_c] < 15 )
+			RETURN - MAXX ( LINESTX ( froid, 'Région jour'[consommation_mw], 'Région jour'[temperature_c] ), [Slope1] )
+		formatString: #,0
+
+	measure 'Thermosensibilité relative (%/°C)' =
+			-- la même pente rapportée à la consommation moyenne des jours froids : comparable d'une région à l'autre
+			VAR froid = FILTER ( 'Région jour', 'Région jour'[nb_heures] >= 23 && NOT ISBLANK ( 'Région jour'[temperature_c] ) && 'Région jour'[temperature_c] < 15 )
+			RETURN DIVIDE ( [Thermosensibilité (MW/°C)], AVERAGEX ( froid, 'Région jour'[consommation_mw] ) )
+		formatString: 0.0%
+
+	column code_insee_region
+		dataType: string
+		summarizeBy: none
+		sourceColumn: code_insee_region
+
+	column date_locale
+		dataType: dateTime
+		formatString: dd/mm/yyyy
+		summarizeBy: none
+		sourceColumn: date_locale
+
+	column consommation_mw
+		dataType: double
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: consommation_mw
+
+	column production_mw
+		dataType: double
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: production_mw
+
+	column solde_mw
+		dataType: double
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: solde_mw
+
+	column temperature_c
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: temperature_c
+
+	column nb_heures
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: nb_heures
+
+	partition 'Région jour' = m
+		mode: import
+		source =
+				let
+				    Source = Parquet.Document(File.Contents(DossierExport & "fct_region_jour.parquet"))
+				in
+				    Source
+

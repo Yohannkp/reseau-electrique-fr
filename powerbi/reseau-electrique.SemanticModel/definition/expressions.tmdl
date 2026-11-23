@@ -1,0 +1,6 @@
+/// Dossier des fichiers Parquet écrits par dbt (data/export). À adapter après un clone du dépôt.
+expression DossierExport = "C:\Ce PC\Projets\Projets Pour mon CV\reseau-electrique-fr\data\export\" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 51c82b82-8aaf-4f50-9fab-28943c5776ec
+
+	annotation PBI_ResultType = Text
+
