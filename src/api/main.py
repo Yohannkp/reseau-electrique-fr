@@ -7,6 +7,7 @@ Lancement : uvicorn api.main:app --port 8000
 from __future__ import annotations
 
 import datetime as dt
+import time
 from contextlib import asynccontextmanager
 from typing import Annotated
 from zoneinfo import ZoneInfo
@@ -26,6 +27,10 @@ from prevision.donnees import VARIABLES, construire, meteo_nationale, national, 
 MODELES = {"consommation_mw": "conso_j1", "taux_co2_g_kwh": "co2_j1"}
 REF = {"consommation_mw": "conso_veille_matin", "taux_co2_g_kwh": "co2_veille_matin"}
 etat: dict = {}
+# Prévisions déjà calculées : (jour, versions des modèles) -> (instant, résultat). La météo prévue change au plus
+# toutes les heures et les modèles chaque semaine : inutile de refaire 250 ms de calcul à chaque appel.
+_cache: dict = {}
+DUREE_CACHE_S = 900
 
 
 def charger_modeles() -> None:
@@ -113,6 +118,7 @@ def predire(cible: str, d: pd.DataFrame):
 def recharger():
     """Recharge les modèles « production » du registre (appelé par Airflow après un réentraînement)."""
     etat.pop("erreur", None)
+    _cache.clear()
     charger_modeles()
     return {c: etat[c]["version"] for c in MODELES}
 
@@ -134,11 +140,15 @@ def prevision(jour: Annotated[dt.date | None, Query(description="Jour à prévoi
     if "erreur" in etat:
         raise HTTPException(503, f"modèles indisponibles : {etat['erreur']}")
     jour = jour or dt.datetime.now(ZoneInfo(PARIS)).date() + dt.timedelta(days=1)
+    cle = (jour, tuple(etat[c]["version"] for c in MODELES))
+    deja = _cache.get(cle)
+    if deja and time.monotonic() - deja[0] < DUREE_CACHE_S:
+        return deja[1]
     d = variables_du_jour(jour)
     if d.empty or d["temperature"].isna().all():
         raise HTTPException(404, f"pas de météo disponible pour le {jour}")
     resultat = {cible: predire(cible, d) for cible in MODELES}
-    return Prevision(
+    p = Prevision(
         jour=jour,
         versions_modeles={c: etat[c]["version"] for c in MODELES},
         donnees_completes=bool(d[["conso_veille_matin", "conso_j2", "temperature"]].notna().all().all()),
@@ -147,6 +157,10 @@ def prevision(jour: Annotated[dt.date | None, Query(description="Jour à prévoi
             for h, c, co2 in zip(d["heure_locale"], resultat["consommation_mw"], resultat["taux_co2_g_kwh"], strict=True)
         ],
     )
+    if len(_cache) > 100:  # on ne garde pas indéfiniment les jours consultés
+        _cache.clear()
+    _cache[cle] = (time.monotonic(), p)
+    return p
 
 
 def meilleur_creneau(heures: list[Heure], duree_h: int) -> Creneau:

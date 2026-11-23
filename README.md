@@ -134,6 +134,11 @@ pages générées par [`powerbi/generer_rapport.py`](powerbi/generer_rapport.py)
 - **Reprise après panne** : l'API temps réel garde environ 3 mois. Après une coupure, la collecte suivante rattrape
   le trou toute seule, à partir du dernier horodatage enregistré. Les requêtes HTTP sont relancées avec un délai croissant.
 - **Écriture atomique** : un fichier n'apparaît qu'une fois complet et validé.
+- **Compactage nocturne** : la collecte écrit environ 200 petits fichiers par jour (70 000 par an), que dbt devrait
+  tous ouvrir à chaque passage. Chaque nuit (DAG `compactage`, entre deux passages de dbt), les fichiers d'une journée
+  terminée sont fusionnés en un seul qui garde la dernière version de chaque mesure ; écriture atomique avant suppression.
+- **Sobriété** : prévisions mises en cache 15 min dans l'API (250 ms → 5 ms) ; serveur MLflow réduit à un processus
+  sans exécuteur de tâches (2,6 Go → 0,4 Go de RAM) ; la stack complète tient en environ 2,4 Go.
 - **Types instables** : une même colonne peut arriver en nombre ou en texte selon l'export, donc tout est converti
   explicitement dans la couche staging.
 - **Pas de temps hétérogène** : 30 min dans les anciennes années, 15 min ensuite. Les marts raisonnent en MW moyens par heure.

@@ -89,7 +89,23 @@ def reentrainement():
     entrainement() >> recharger_api()
 
 
+
+# 2 h 07 UTC : entre deux passages de dbt (:00, :15…), qui ne lit donc jamais un fichier en cours de suppression.
+@dag(schedule="7 2 * * *", **COMMUN)
+def compactage():
+    """Fusionne les petits fichiers des journées de collecte terminées (environ 200 par jour)."""
+
+    @task
+    def compacter() -> int:
+        from collecte.compactage import compacter
+
+        return compacter()
+
+    compacter()
+
+
 eco2mix_temps_reel()
 meteo_prevision()
 historique()
 reentrainement()
+compactage()
