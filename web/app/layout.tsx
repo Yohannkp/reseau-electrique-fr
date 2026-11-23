@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: "Consommation, production, échanges et CO₂ de l'électricité française en 3D, heure par heure, avec la prévision du lendemain.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={`${inter.variable} ${mono.variable} h-full antialiased`}>
       <body className="h-full">{children}</body>

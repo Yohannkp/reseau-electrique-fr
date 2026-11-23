@@ -1,7 +1,7 @@
 "use client";
 
 import type { DonneesNational } from "@/lib/api";
-import { couleurCo2, gw } from "@/lib/visuel";
+import { couleurCo2, gw, heureTexte } from "@/lib/visuel";
 
 const MIX: { cle: keyof DonneesNational["mix"]; nom: string; couleur: string }[] = [
   { cle: "nucleaire", nom: "Nucléaire", couleur: "rgb(244,190,32)" },
@@ -40,7 +40,11 @@ function Courbe({ n, i }: { n: DonneesNational; i: number }) {
   );
 }
 
-export default function PanneauNational({ n, i }: { n: DonneesNational | null; i: number }) {
+function dateCourte(jour: string) {
+  return new Date(jour + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }).toUpperCase();
+}
+
+export default function PanneauNational({ n, i, direct, jour }: { n: DonneesNational | null; i: number; direct: boolean; jour: string | null }) {
   if (!n) return <div className="panneau w-[330px] p-5 text-sm text-slate-400">Chargement…</div>;
   const conso = n.consommation_mw[i];
   const prev = n.prevision_j1_mw[i];
@@ -52,7 +56,16 @@ export default function PanneauNational({ n, i }: { n: DonneesNational | null; i
 
   return (
     <div className="panneau w-[330px] p-5">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-300/80">France, à cette heure</div>
+      {direct ? (
+        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
+          <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" /><span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" /></span>
+          En direct · {n.heures[i] ? heureTexte(n.heures[i]) : ""}
+        </div>
+      ) : (
+        <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-300">
+          Replay · {jour ? dateCourte(jour) : ""} · {n.heures[i] ? heureTexte(n.heures[i]) : ""}
+        </div>
+      )}
       <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-4">
         <div>
           <div className="text-xs text-slate-400">Consommation</div>

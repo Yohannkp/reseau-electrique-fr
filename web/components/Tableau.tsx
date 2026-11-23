@@ -7,7 +7,7 @@ import ModeIngenieur from "./ModeIngenieur";
 import PanneauDemain from "./PanneauDemain";
 import PanneauNational from "./PanneauNational";
 import { lire, type DonneesNational, type DonneesRegions, type Journee } from "@/lib/api";
-import { FILIERES, gw } from "@/lib/visuel";
+import { gw } from "@/lib/visuel";
 
 /** Dernière heure renseignée à la fois au national et dans les régions : la journée en cours est incomplète,
  * et RTE publie le national un peu avant les régions. */
@@ -70,6 +70,8 @@ export default function Tableau() {
   }, [lecture, vitesse, national, regions]);
 
   const choisirJour = (j: string) => { setJour(j); setI(0); setLecture(true); };
+  const direct = !!periode && jour === periode.fin;
+  const revenirAuDirect = () => { if (periode) { setLecture(false); setJour(periode.fin); } };
   const r = survol && regions?.valeurs[survol.code];
 
   return (
@@ -82,7 +84,12 @@ export default function Tableau() {
       <header className="pointer-events-none absolute left-6 top-5 z-20">
         <h1 className="text-[26px] font-semibold tracking-tight text-white">Le pouls électrique de la France</h1>
         <p className="mt-0.5 max-w-xl text-[13px] text-slate-400">
-          Hauteur des régions : consommation. Tours : production par filière. Arcs : échanges avec les voisins. Données RTE éCO2mix, heure par heure.
+          Hauteur des régions : consommation. Tours : production par filière. Arcs : échanges avec les voisins.
+        </p>
+        <p className="mt-1 flex items-center gap-3 text-[11px] text-slate-500">
+          <span className="flex items-center gap-1.5"><span className="h-[2px] w-4 rounded bg-[rgb(64,224,255)] shadow-[0_0_6px_rgb(64,224,255)]" />région exportatrice</span>
+          <span className="flex items-center gap-1.5"><span className="h-[2px] w-4 rounded bg-[rgb(255,150,60)] shadow-[0_0_6px_rgb(255,150,60)]" />importatrice</span>
+          <span>· données RTE éCO2mix, heure par heure</span>
         </p>
       </header>
 
@@ -95,17 +102,14 @@ export default function Tableau() {
         {"</>"} Mode ingénieur
       </button>
 
-      <div className="pointer-events-auto absolute left-6 top-28 z-20"><PanneauNational n={national} i={i} /></div>
-      {!ingenieur && <div className="pointer-events-auto absolute right-6 top-20 z-20"><PanneauDemain /></div>}
+      <div className="pointer-events-auto absolute left-6 top-[136px] z-20"><PanneauNational n={national} i={i} direct={direct} jour={jour} /></div>
+      {!ingenieur && (
+        // en replay, la prévision de demain reste visible mais passe au second plan : aucune confusion de dates
+        <div className={`pointer-events-auto absolute right-6 top-20 z-20 transition duration-500 ${direct ? "" : "opacity-40 grayscale hover:opacity-100 hover:grayscale-0"}`}>
+          <PanneauDemain />
+        </div>
+      )}
       {ingenieur && <ModeIngenieur onFermer={() => setIngenieur(false)} />}
-
-      <div className="pointer-events-none absolute bottom-[150px] left-6 z-20 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-400">
-        {FILIERES.map((f) => (
-          <span key={f.cle} className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm" style={{ background: `rgb(${f.couleur.join(",")})` }} />{f.nom}</span>
-        ))}
-        <span className="ml-2 flex items-center gap-1"><span className="h-2 w-4 rounded-sm bg-[rgb(64,224,255)]" />région exportatrice</span>
-        <span className="flex items-center gap-1"><span className="h-2 w-4 rounded-sm bg-[rgb(255,150,60)]" />importatrice</span>
-      </div>
 
       <div className="absolute inset-x-6 bottom-5 z-20">
         {jour && (
@@ -118,6 +122,8 @@ export default function Tableau() {
             vitesse={vitesse}
             journees={journees}
             onJour={choisirJour}
+            direct={direct}
+            onDirect={revenirAuDirect}
             onI={(x) => { setI(x); setLecture(false); }}
             onLecture={() => setLecture((x) => !x)}
             onVitesse={setVitesse}

@@ -15,6 +15,8 @@ interface Props {
   onI: (i: number) => void;
   onLecture: () => void;
   onVitesse: (v: number) => void;
+  direct: boolean;
+  onDirect: () => void;
 }
 
 function decaler(jour: string, n: number) {
@@ -23,24 +25,30 @@ function decaler(jour: string, n: number) {
   return d.toISOString().slice(0, 10);
 }
 
-export default function Frise({ jour, periode, heures, i, lecture, vitesse, journees, onJour, onI, onLecture, onVitesse }: Props) {
+export default function Frise({ jour, periode, heures, i, lecture, vitesse, journees, onJour, onI, onLecture, onVitesse, direct, onDirect }: Props) {
   const max = Math.max(0, heures.length - 1);
   return (
     <div className="panneau pointer-events-auto w-full px-5 pt-3 pb-4">
-      <div className="mb-3 flex items-center gap-2 overflow-x-auto whitespace-nowrap [scrollbar-width:none]">
-        <span className="mr-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-300/80">Machine à remonter le temps</span>
-        {journees.map((j) => (
-          <button
-            key={j.date + j.titre}
-            onClick={() => onJour(j.date)}
-            title={`${j.description} (${j.valeur})`}
-            className={`rounded-full border px-3 py-1 text-xs transition ${
-              j.date === jour ? "border-sky-300 bg-sky-300/20 text-white" : "border-white/15 text-slate-300 hover:border-white/40 hover:text-white"
-            }`}
-          >
-            {j.titre}
-          </button>
-        ))}
+      <div className="mb-3 flex items-center gap-3">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-300/80">Machine à remonter le temps</span>
+        <select
+          value={journees.find((j) => j.date === jour)?.date ?? ""}
+          onChange={(e) => e.target.value && onJour(e.target.value)}
+          className="rounded-lg border border-white/15 bg-slate-900/80 px-2.5 py-1 text-xs text-slate-200 hover:border-white/35"
+          aria-label="Événements marquants"
+        >
+          <option value="">Événements marquants ▾</option>
+          {journees.map((j) => (
+            <option key={j.date + j.titre} value={j.date}>{j.titre} · {j.valeur} · {j.date.split("-").reverse().join("/")}</option>
+          ))}
+        </select>
+        <button
+          onClick={onDirect}
+          disabled={direct}
+          className="ml-auto flex items-center gap-1.5 rounded-full border border-emerald-400/40 px-3 py-1 text-xs text-emerald-300 transition enabled:hover:bg-emerald-400/10 disabled:opacity-40"
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Revenir au direct
+        </button>
       </div>
 
       <div className="flex items-center gap-4">
