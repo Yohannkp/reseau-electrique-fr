@@ -51,10 +51,16 @@ jobs:
       - name: Collecte
         run: |
           debut=$SECONDS
-          if [ ! -d data/raw/eco2mix_def ] || [ "$(date -u +%u%H)" = "103" ]; then
-            python -m collecte consolide
-            python -m collecte meteo
-            python -c "from collecte import meteo; meteo.collecter_prevision_veille()"
+          if [ ! -d data/raw/eco2mix_def ]; then
+            # Premier passage : l'historique depuis 2013 vient de la release « amorcage-donnees ».
+            # Le télécharger depuis l'API d'ODRÉ prend plus de 30 min depuis les serveurs de GitHub.
+            mkdir -p data/raw
+            curl -sSfL https://github.com/${{ github.repository }}/releases/download/amorcage-donnees/donnees-historiques.tar.gz | tar xz -C data/raw
+          elif [ "$(date -u +%u%H)" = "103" ]; then
+            # Chaque lundi : mois nouvellement consolidés par RTE ; borné pour ne jamais bloquer la publication
+            timeout 1200 python -m collecte consolide || echo "::warning::historique consolidé non rafraîchi"
+            timeout 600 python -m collecte meteo || echo "::warning::archive météo non rafraîchie"
+            timeout 300 python -c "from collecte import meteo; meteo.collecter_prevision_veille()" || true
           fi
           python -m collecte temps-reel
           python -c "from collecte import meteo; meteo.collecter_prevision()"
