@@ -1,16 +1,21 @@
 # Le réseau électrique français en temps réel
 
 Pipeline de données de bout en bout sur la consommation et la production d'électricité en France,
-par région et par quart d'heure, depuis 2013 et en continu, croisée avec la météo.
+par région et par quart d'heure, depuis 2013 et en continu, croisée avec la météo : collecte, orchestration,
+entrepôt testé, rapport Power BI, prévision J+1 servie par une API, et une carte 3D qui rejoue n'importe quelle heure.
 
-> Projet en cours. Fait : collecte, orchestration, entrepôt, tests de qualité, rapport Power BI, note d'analyse,
-> prévision J+1 (LightGBM, MLflow, FastAPI). À venir : carte 3D (Next.js, deck.gl).
+![Le pouls électrique de la France : pointe record du 28 février 2018 à 19 h](docs/app/2-pointe-2018.png)
+
+*28 février 2018, 19 h : pointe record de 96,1 GW. La hauteur des régions suit leur consommation, les tours leur
+production par filière, la couleur leur solde (cyan : exportatrice, ambre : importatrice). Ce soir-là, la France importe 6,2 GW.*
+
+**Stack** : Python, Airflow 3, dbt + DuckDB, Parquet, LightGBM, MLflow, FastAPI, Docker Compose, Power BI (PBIP),
+Next.js + deck.gl, GitHub Actions.
 
 **Résultat principal** ([note d'analyse](ANALYSE.md)) : l'erreur de la prévision de RTE semble avoir doublé depuis 2023
 (1,5 % → 2,7 %). En réalité, la prévision vise la consommation mesurée en temps réel, et c'est la version consolidée qui a
 été revue d'environ +1 GW. Comparée à la donnée temps réel, la prévision retrouve sa précision d'avant 2022 (1,3 %).
 
-![Rapport Power BI, page Prévision de RTE](docs/powerbi/2-prevision-rte.jpg)
 
 ## Architecture
 
@@ -32,7 +37,7 @@ API ODRÉ (RTE éCO2mix)                 API Open-Meteo
               Airflow 3 (LocalExecutor, PostgreSQL), dans Docker Compose
                                ▼
               data/export/*.parquet ──► Power BI
-                               └──────► prévision LightGBM ──► MLflow (suivi, registre) ──► API FastAPI
+                               └──────► prévision LightGBM ──► MLflow (suivi, registre) ──► API FastAPI ──► carte 3D (Next.js, deck.gl)
 ```
 
 | Table | Grain | Contenu |
@@ -41,6 +46,28 @@ API ODRÉ (RTE éCO2mix)                 API Open-Meteo
 | `fct_national_heure` | heure | consommation, prévisions J-1 et J de RTE et leur erreur, mix, part bas carbone, CO₂, température pondérée |
 | `fct_region_jour` | région × jour | moyennes journalières (consommation, solde, température), pour la thermosensibilité |
 | `dim_region` | région | nom, préfecture et coordonnées du point météo (seed dbt, lu aussi par la collecte météo) |
+
+## Carte 3D : « le pouls électrique de la France »
+
+Application Next.js + deck.gl ([`web/`](web/)) branchée sur l'API.
+
+- **Carte 3D** : socles régionaux (consommation, solde), tours de production empilées par filière, arcs animés
+  vers les 5 frontières (impulsions dans le sens des échanges), éclairage directionnel.
+- **Machine à remonter le temps** : n'importe quelle journée depuis 2013, lecture heure par heure, et 8 journées
+  remarquables calculées depuis les données (pointe record, record solaire, record d'export, journée la plus carbonée…).
+  Lien direct vers un instant : `?jour=2018-02-28&heure=19`.
+- **Demain** : prévision de notre modèle (consommation et CO₂), meilleur créneau bas carbone, et scénario
+  « et si demain était plus froid ? » recalculé par le modèle.
+- **Mode ingénieur** : fraîcheur de chaque source, résultats des tests dbt, état des DAG Airflow, versions et erreurs
+  des modèles en production, volumes exportés. Tout est lu en direct, rien n'est simulé.
+
+| | |
+|---|---|
+| ![Aujourd'hui](docs/app/1-aujourdhui.png) | ![Record solaire](docs/app/4-record-solaire.png) |
+| ![Mode ingénieur](docs/app/3-mode-ingenieur.png) | ![Rapport Power BI](docs/powerbi/2-prevision-rte.jpg) |
+
+Endpoints ajoutés pour l'app : `/periode`, `/carte/regions`, `/carte/national` (dont les échanges commerciaux par frontière),
+`/journees-remarquables`, `/pipeline`, `/scenario/froid`.
 
 ## Prévision J+1 et meilleur créneau bas carbone
 
@@ -141,6 +168,7 @@ Ce que les tests ont déjà trouvé dans les données de RTE :
 ```bash
 docker compose up -d --build
 # Airflow http://localhost:18080 · MLflow http://localhost:15000 · API http://localhost:18000/docs
+cd web && npm install && npm run build && npm start        # carte 3D http://localhost:3000
 ```
 
 Au premier démarrage, déclencher le DAG `historique` dans l'interface (environ 15 min, ~150 Mo), puis `reentrainement`.
@@ -161,3 +189,5 @@ cd .. && pytest
   sous [Licence Ouverte v2.0 (Etalab)](https://www.etalab.gouv.fr/wp-content/uploads/2017/04/ETALAB-Licence-Ouverte-v2.0.pdf).
 - Météo [Open-Meteo](https://open-meteo.com) (réanalyse ERA5 de Copernicus et modèles de prévision), sous
   [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- Contours des régions : [france-geojson](https://github.com/gregoiredavid/france-geojson), d'après IGN Admin Express
+  (Licence Ouverte). Fond de carte © [CARTO](https://carto.com/attributions), © contributeurs OpenStreetMap.

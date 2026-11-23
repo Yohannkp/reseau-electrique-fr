@@ -77,7 +77,7 @@ def periode(d: pd.DataFrame, nom: str) -> pd.DataFrame:
 def meteo_prevue_veille() -> pd.DataFrame:
     import duckdb
 
-    regionale = duckdb.sql(f"""
+    regionale = duckdb.connect().sql(f"""
         select code_insee_region, heure, temperature_c as temperature, rayonnement_w_m2 as rayonnement,
                vent_100m_km_h as vent
         from '{(DOSSIER / "meteo_prevue_veille.parquet").as_posix()}' where temperature_c is not null

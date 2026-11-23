@@ -23,6 +23,12 @@ select
     try_cast(fioul as integer) as fioul_mw,
     try_cast(pompage as integer) as pompage_mw,
     try_cast(ech_physiques as integer) as echanges_physiques_mw,
+    -- échanges commerciaux par frontière : négatif = la France exporte (vérifié : exportatrice en 2024-2025)
+    try_cast(ech_comm_angleterre as integer) as ech_comm_angleterre_mw,
+    try_cast(ech_comm_espagne as integer) as ech_comm_espagne_mw,
+    try_cast(ech_comm_italie as integer) as ech_comm_italie_mw,
+    try_cast(ech_comm_suisse as integer) as ech_comm_suisse_mw,
+    try_cast(ech_comm_allemagne_belgique as integer) as ech_comm_allemagne_belgique_mw,
     source
 from brut
 where try_cast(consommation as integer) > 0

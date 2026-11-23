@@ -31,7 +31,7 @@ def _export(dossier: pathlib.Path, table: str) -> str:
 def poids_regions(dossier: pathlib.Path) -> pd.DataFrame:
     """Poids de chaque région dans la consommation nationale (moyenne sur tout l'historique).
     Poids fixes : le même calcul vaut pour la météo observée et pour la météo prévue."""
-    return duckdb.sql(f"""
+    return duckdb.connect().sql(f"""
         select code_insee_region, avg(consommation_mw) / sum(avg(consommation_mw)) over () as poids
         from '{_export(dossier, 'fct_region_jour')}' group by 1
     """).df()
@@ -49,7 +49,7 @@ def meteo_nationale(regionale: pd.DataFrame, poids: pd.DataFrame) -> pd.DataFram
 
 
 def meteo_observee(dossier: pathlib.Path) -> pd.DataFrame:
-    regionale = duckdb.sql(f"""
+    regionale = duckdb.connect().sql(f"""
         select code_insee_region, heure, temperature_c as temperature, rayonnement_w_m2 as rayonnement,
                vent_100m_km_h as vent
         from '{_export(dossier, 'fct_region_heure')}' where temperature_c is not null
@@ -58,7 +58,7 @@ def meteo_observee(dossier: pathlib.Path) -> pd.DataFrame:
 
 
 def national(dossier: pathlib.Path) -> pd.DataFrame:
-    return duckdb.sql(f"""
+    return duckdb.connect().sql(f"""
         select heure, heure_locale, consommation_mw, taux_co2_g_kwh, prevision_j1_mw, source
         from '{_export(dossier, 'fct_national_heure')}'
     """).df()

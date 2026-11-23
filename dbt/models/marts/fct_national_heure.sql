@@ -16,6 +16,11 @@ with national as (
         avg(charbon_mw) as charbon_mw,
         avg(fioul_mw) as fioul_mw,
         avg(echanges_physiques_mw) as echanges_physiques_mw,
+        avg(ech_comm_angleterre_mw) as ech_comm_angleterre_mw,
+        avg(ech_comm_espagne_mw) as ech_comm_espagne_mw,
+        avg(ech_comm_italie_mw) as ech_comm_italie_mw,
+        avg(ech_comm_suisse_mw) as ech_comm_suisse_mw,
+        avg(ech_comm_allemagne_belgique_mw) as ech_comm_allemagne_belgique_mw,
         max(source) as source  -- 'temps_reel' si au moins un pas de l'heure est provisoire
     from {{ ref('stg_eco2mix_national') }}
     group by date_trunc('hour', date_heure)

@@ -7,23 +7,22 @@ Lancement : uvicorn api.main:app --port 8000
 from __future__ import annotations
 
 import datetime as dt
-import os
-import pathlib
 from contextlib import asynccontextmanager
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
-import duckdb
+import duckdb  # une connexion par requête (duckdb.connect()) : la connexion par défaut ne supporte pas les appels simultanés
 import mlflow
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from mlflow import MlflowClient
 from pydantic import BaseModel
 
+from api.carte import DOSSIER, PARIS
+from api.carte import router as carte
 from prevision.donnees import VARIABLES, construire, meteo_nationale, national, poids_regions
 
-DOSSIER = pathlib.Path(os.environ.get("DATA_DIR", "data")) / "export"
-PARIS = "Europe/Paris"
 MODELES = {"consommation_mw": "conso_j1", "taux_co2_g_kwh": "co2_j1"}
 REF = {"consommation_mw": "conso_veille_matin", "taux_co2_g_kwh": "co2_veille_matin"}
 etat: dict = {}
@@ -57,6 +56,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=demarrage,
 )
+# l'app 3D (Next.js) tourne sur le port 3000
+app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"], allow_methods=["*"])
+app.include_router(carte)
 
 
 class Heure(BaseModel):
@@ -82,7 +84,7 @@ class Creneau(BaseModel):
 
 
 def meteo_recente() -> pd.DataFrame:
-    regionale = duckdb.sql(f"""
+    regionale = duckdb.connect().sql(f"""
         select code_insee_region, heure, temperature_c as temperature, rayonnement_w_m2 as rayonnement,
                vent_100m_km_h as vent
         from '{(DOSSIER / "meteo_region_heure.parquet").as_posix()}'
@@ -102,6 +104,11 @@ def variables_du_jour(jour: dt.date) -> pd.DataFrame:
     return d[d["jour"] == pd.Timestamp(jour)]
 
 
+def predire(cible: str, d: pd.DataFrame):
+    p = etat[cible]["modele"].predict(d[VARIABLES])
+    return p + d[REF[cible]].to_numpy() if etat[cible]["relative"] else p
+
+
 @app.post("/recharger")
 def recharger():
     """Recharge les modèles « production » du registre (appelé par Airflow après un réentraînement)."""
@@ -112,7 +119,7 @@ def recharger():
 
 @app.get("/sante")
 def sante():
-    fraicheur = duckdb.sql(
+    fraicheur = duckdb.connect().sql(
         f"select max(heure_locale) from '{(DOSSIER / 'fct_national_heure.parquet').as_posix()}'"
     ).fetchall()[0][0]
     return {
@@ -130,12 +137,7 @@ def prevision(jour: Annotated[dt.date | None, Query(description="Jour à prévoi
     d = variables_du_jour(jour)
     if d.empty or d["temperature"].isna().all():
         raise HTTPException(404, f"pas de météo disponible pour le {jour}")
-    resultat = {}
-    for cible, m in etat.items():
-        if cible not in MODELES:
-            continue
-        p = m["modele"].predict(d[VARIABLES])
-        resultat[cible] = p + d[REF[cible]].to_numpy() if m["relative"] else p
+    resultat = {cible: predire(cible, d) for cible in MODELES}
     return Prevision(
         jour=jour,
         versions_modeles={c: etat[c]["version"] for c in MODELES},
@@ -170,3 +172,25 @@ def creneau(duree_h: Annotated[int, Query(ge=1, le=12, description="Durée de la
             jour: dt.date | None = None):
     """Le créneau de `duree_h` heures le moins carboné du jour prévu : recharge d'un véhicule, calcul lourd, lave-linge..."""
     return meilleur_creneau(prevision(jour).heures, duree_h)
+
+
+@app.get("/scenario/froid")
+def scenario_froid(delta_c: Annotated[float, Query(ge=-10, le=5, description="Écart de température (°C) appliqué à toutes les heures du jour")] = -5,
+                   jour: dt.date | None = None):
+    """Prévision de consommation du jour, normale (`reference_mw`) et avec toutes les températures décalées de `delta_c`
+    (`scenario_mw`). La température moyenne de J-2 reste inchangée : elle est déjà observée.
+    `ecart_max_mw` est l'écart (scénario - référence) de plus grande valeur absolue, `ecart_moyen_mw` la moyenne des écarts."""
+    if "erreur" in etat:
+        raise HTTPException(503, f"modèles indisponibles : {etat['erreur']}")
+    jour = jour or dt.datetime.now(ZoneInfo(PARIS)).date() + dt.timedelta(days=1)
+    d = variables_du_jour(jour)
+    if d.empty or d["temperature"].isna().all():
+        raise HTTPException(404, f"pas de météo disponible pour le {jour}")
+    froid = d.assign(temperature=d["temperature"] + delta_c, temperature_moy_jour=d["temperature_moy_jour"] + delta_c)
+    reference, scenario = predire("consommation_mw", d), predire("consommation_mw", froid)
+    ecart = scenario - reference
+    return {
+        "jour": jour.isoformat(), "delta_c": delta_c, "heures": [h.isoformat() for h in d["heure_locale"]],
+        "reference_mw": [round(float(v)) for v in reference], "scenario_mw": [round(float(v)) for v in scenario],
+        "ecart_max_mw": round(float(ecart[abs(ecart).argmax()])), "ecart_moyen_mw": round(float(ecart.mean())),
+    }
