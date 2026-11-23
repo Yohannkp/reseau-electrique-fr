@@ -61,10 +61,35 @@ def historique():
 
         return collecter_archive()
 
+    @task
+    def meteo_prevue_veille() -> int:
+        from collecte.meteo import collecter_prevision_veille
+
+        return collecter_prevision_veille()
+
     eco2mix_consolide.expand(perimetre=["regional", "national"])
     meteo_archive()
+    meteo_prevue_veille()
+
+
+
+@dag(schedule="0 3 * * 1", **COMMUN)
+def reentrainement():
+    """Chaque lundi à 3 h : réentraîne les deux modèles, les enregistre dans MLflow (alias « production »)
+    si tout s'est bien passé, puis demande à l'API de recharger les nouvelles versions."""
+
+    @task.bash
+    def entrainement() -> str:
+        return "cd /opt/airflow && /home/airflow/ml/bin/python -m prevision.entrainement"
+
+    @task.bash
+    def recharger_api() -> str:
+        return "curl -sf -X POST http://api:8000/recharger"
+
+    entrainement() >> recharger_api()
 
 
 eco2mix_temps_reel()
 meteo_prevision()
 historique()
+reentrainement()

@@ -3,8 +3,8 @@
 Pipeline de données de bout en bout sur la consommation et la production d'électricité en France,
 par région et par quart d'heure, depuis 2013 et en continu, croisée avec la météo.
 
-> Projet en cours. Fait : collecte, orchestration, entrepôt, tests de qualité, rapport Power BI et note d'analyse.
-> À venir : prévision de consommation comparée à celle de RTE (MLflow, FastAPI), carte 3D (Next.js, deck.gl).
+> Projet en cours. Fait : collecte, orchestration, entrepôt, tests de qualité, rapport Power BI, note d'analyse,
+> prévision J+1 (LightGBM, MLflow, FastAPI). À venir : carte 3D (Next.js, deck.gl).
 
 **Résultat principal** ([note d'analyse](ANALYSE.md)) : l'erreur de la prévision de RTE semble avoir doublé depuis 2023
 (1,5 % → 2,7 %). En réalité, la prévision vise la consommation mesurée en temps réel, et c'est la version consolidée qui a
@@ -30,6 +30,9 @@ API ODRÉ (RTE éCO2mix)                 API Open-Meteo
                 marts   : fct_region_heure, fct_national_heure            (prêt pour l'analyse)
                                ▲
               Airflow 3 (LocalExecutor, PostgreSQL), dans Docker Compose
+                               ▼
+              data/export/*.parquet ──► Power BI
+                               └──────► prévision LightGBM ──► MLflow (suivi, registre) ──► API FastAPI
 ```
 
 | Table | Grain | Contenu |
@@ -38,6 +41,46 @@ API ODRÉ (RTE éCO2mix)                 API Open-Meteo
 | `fct_national_heure` | heure | consommation, prévisions J-1 et J de RTE et leur erreur, mix, part bas carbone, CO₂, température pondérée |
 | `fct_region_jour` | région × jour | moyennes journalières (consommation, solde, température), pour la thermosensibilité |
 | `dim_region` | région | nom, préfecture et coordonnées du point météo (seed dbt, lu aussi par la collecte météo) |
+
+## Prévision J+1 et meilleur créneau bas carbone
+
+Deux modèles LightGBM prévoient, la veille à midi, la consommation nationale et le taux de CO₂ de chaque heure du lendemain.
+Ils sont suivis et versionnés dans MLflow, réentraînés chaque lundi par Airflow, et servis par une API FastAPI.
+
+**Évaluation honnête.** Les périodes ne se recouvrent jamais : apprentissage 2013-2023, réglage 2024 (choix des
+variantes, voir [`prevision/essais.py`](src/prevision/essais.py)), test janvier 2025 → août 2026. Au test, le modèle reçoit
+la météo **telle qu'elle était prévue la veille** (archive Open-Meteo), pas la météo observée après coup. Un test
+automatique vérifie qu'aucune variable n'utilise une donnée postérieure à la veille à midi.
+
+| Consommation, test 2025 → août 2026 | Erreur | Erreur moyenne |
+|---|---|---|
+| Base naïve (même heure, semaine précédente) | 6,59 % | 3 502 MW |
+| Prévision de la veille de RTE | 2,70 % | 1 344 MW |
+| RTE corrigé de son biais mesuré en 2024 | 2,05 % | 1 023 MW |
+| **Notre modèle** | **1,95 %** | **1 013 MW** |
+
+Sur la consommation consolidée, le modèle fait jeu égal avec RTE une fois le biais de RTE corrigé
+(voir la [note d'analyse](ANALYSE.md) pour l'origine de ce biais). **Sur la donnée temps réel (septembre-novembre 2026),
+RTE reste nettement meilleur : 1,3 % d'erreur contre 1,8 %.** RTE dispose de bien plus d'informations
+(mises à jour dans la journée, grands consommateurs, météo plus fine).
+
+| CO₂, test 2025 → août 2026 | Erreur moyenne |
+|---|---|
+| Base naïve (même heure, semaine précédente) | 6,96 g/kWh |
+| Base naïve (même heure, avant-veille) | 5,56 g/kWh |
+| **Notre modèle** | **4,85 g/kWh** (−13 %) |
+
+RTE ne publie pas de prévision du taux de CO₂ dans éCO2mix : c'est ce qui rend l'API utile.
+
+**API** (http://localhost:18000/docs) :
+- `GET /prevision?jour=AAAA-MM-JJ` : consommation et CO₂ prévus pour chaque heure (par défaut demain) ;
+- `GET /meilleur-creneau?duree_h=3` : le créneau le moins carboné pour placer une consommation (recharge d'un véhicule,
+  calcul lourd), avec le gain par rapport au pire créneau et à la moyenne ;
+- `GET /sante`, `POST /recharger` : versions des modèles servis, rechargement après réentraînement.
+
+**Choix de modélisation** : cible relative (écart au niveau de la matinée de la veille) plutôt que valeur brute, plus
+robuste aux changements de régime (le CO₂ est passé d'environ 50 à environ 20 g/kWh) ; perte L1 ; même nombre d'arbres
+pour le modèle final, réentraîné sur tout l'historique.
 
 ## Rapport Power BI
 
@@ -67,10 +110,10 @@ pages générées par [`powerbi/generer_rapport.py`](powerbi/generer_rapport.py)
 - **Types instables** : une même colonne peut arriver en nombre ou en texte selon l'export, donc tout est converti
   explicitement dans la couche staging.
 - **Pas de temps hétérogène** : 30 min dans les anciennes années, 15 min ensuite. Les marts raisonnent en MW moyens par heure.
-- **Météo observée ou prévue** : la colonne `source` les distingue. Le futur modèle de prévision ne pourra pas
-  utiliser une météo qu'il n'aurait pas connue au moment de prévoir.
+- **Météo observée ou prévue** : la colonne `source` les distingue, et l'archive des prévisions de la veille sert au test. Le modèle de prévision ne doit
+  pas utiliser de météo qu'il n'aurait pas connue au moment de prévoir.
 - **Un seul écrivain DuckDB** : seul le DAG temps réel lance dbt. Les marts sont écrits en Parquet
-  (matérialisation `external` de dbt-duckdb) : c'est la frontière avec Power BI et, demain, avec l'API.
+  (matérialisation `external` de dbt-duckdb) : c'est la frontière avec Power BI et avec l'API.
   L'entrepôt garde les chemins de l'environnement qui l'a construit : depuis Windows, reconstruire en entier
   (`dbt build`) plutôt qu'une sélection, ou ouvrir l'entrepôt en lecture seule.
 
@@ -96,10 +139,11 @@ Ce que les tests ont déjà trouvé dans les données de RTE :
 ## Démarrer
 
 ```bash
-docker compose up -d --build        # Airflow sur http://localhost:18080
+docker compose up -d --build
+# Airflow http://localhost:18080 · MLflow http://localhost:15000 · API http://localhost:18000/docs
 ```
 
-Au premier démarrage, déclencher le DAG `historique` dans l'interface (environ 15 min, ~130 Mo).
+Au premier démarrage, déclencher le DAG `historique` dans l'interface (environ 15 min, ~150 Mo), puis `reentrainement`.
 
 Sans Docker :
 

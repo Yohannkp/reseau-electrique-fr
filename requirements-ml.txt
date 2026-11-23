@@ -1,0 +1,8 @@
+# Prévision et API : partagé par l'image Airflow (réentraînement) et l'image de l'API.
+duckdb==2.0.1
+pandas==3.1.1
+lightgbm==4.7.0
+mlflow==3.18.0
+holidays==0.109
+fastapi==0.165.0
+uvicorn==0.54.0

@@ -1,0 +1,73 @@
+{
+  "version": "1.1.0",
+  "diagrams": [
+    {
+      "ordinal": 0,
+      "scrollPosition": {
+        "x": 0,
+        "y": 0
+      },
+      "nodes": [
+        {
+          "location": {
+            "x": 334.18269278110961,
+            "y": 236.21728500854161
+          },
+          "nodeIndex": "Calendrier",
+          "nodeLineageTag": "b048b05b-80ec-45f4-a0be-8a1389281781",
+          "size": {
+            "height": 224,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 50,
+            "y": 323.41174280316386
+          },
+          "nodeIndex": "National",
+          "nodeLineageTag": "e7d6da1c-45d8-44be-9cd2-2474b95c36b8",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 618.38448636284215,
+            "y": 47.334036245553875
+          },
+          "nodeIndex": "Région jour",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 902.55804017781622,
+            "y": -50
+          },
+          "nodeIndex": "Régions",
+          "nodeLineageTag": "f5c5cb05-76df-4492-87c5-555e6ebcbb0a",
+          "size": {
+            "height": 200,
+            "width": 234
+          },
+          "zIndex": 0
+        }
+      ],
+      "name": "All tables",
+      "zoomValue": 100,
+      "pinKeyFieldsToTop": false,
+      "showExtraHeaderInfo": false,
+      "hideKeyFieldsWhenCollapsed": false,
+      "tablesLocked": false
+    }
+  ],
+  "selectedDiagram": "All tables",
+  "defaultDiagram": "All tables"
+}

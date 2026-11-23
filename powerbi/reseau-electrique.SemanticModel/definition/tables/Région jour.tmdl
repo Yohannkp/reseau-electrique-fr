@@ -1,64 +1,76 @@
 /// Moyennes journalières par région (marts dbt fct_region_jour).
 table 'Région jour'
+	lineageTag: 52bd9337-2e8b-4074-9ec3-82a1da965a17
 
-	measure 'Consommation régionale (TWh)' =
-			DIVIDE ( SUMX ( 'Région jour', 'Région jour'[consommation_mw] * 'Région jour'[nb_heures] ), 1000000 )
+	measure 'Consommation régionale (TWh)' = DIVIDE ( SUMX ( 'Région jour', 'Région jour'[consommation_mw] * 'Région jour'[nb_heures] ), 1000000 )
 		formatString: #,0.0
+		lineageTag: a71702e1-479e-4302-b314-c8a6b114037f
 
-	measure 'Solde moyen (GW)' =
-			DIVIDE ( AVERAGE ( 'Région jour'[solde_mw] ), 1000 )
+	measure 'Solde moyen (GW)' = DIVIDE ( AVERAGE ( 'Région jour'[solde_mw] ), 1000 )
 		formatString: #,0.00
+		lineageTag: 569ff403-e2a3-4f31-afa8-6b76f1cfc553
 
 	measure 'Thermosensibilité (MW/°C)' =
 			-- MW consommés en plus pour chaque degré en moins, sur les jours complets à moins de 15 °C (régression linéaire)
 			VAR froid = FILTER ( 'Région jour', 'Région jour'[nb_heures] >= 23 && NOT ISBLANK ( 'Région jour'[temperature_c] ) && 'Région jour'[temperature_c] < 15 )
 			RETURN - MAXX ( LINESTX ( froid, 'Région jour'[consommation_mw], 'Région jour'[temperature_c] ), [Slope1] )
 		formatString: #,0
+		lineageTag: b05dec33-a76a-43fc-bb4c-4dc2809ec701
 
 	measure 'Thermosensibilité relative (%/°C)' =
 			-- la même pente rapportée à la consommation moyenne des jours froids : comparable d'une région à l'autre
 			VAR froid = FILTER ( 'Région jour', 'Région jour'[nb_heures] >= 23 && NOT ISBLANK ( 'Région jour'[temperature_c] ) && 'Région jour'[temperature_c] < 15 )
 			RETURN DIVIDE ( [Thermosensibilité (MW/°C)], AVERAGEX ( froid, 'Région jour'[consommation_mw] ) )
 		formatString: 0.0%
+		lineageTag: 0bff96ad-0097-4223-a752-2be1612cb323
 
 	column code_insee_region
 		dataType: string
+		lineageTag: ee68ad5a-46d7-4c22-a120-de60b2032f82
 		summarizeBy: none
 		sourceColumn: code_insee_region
 
 	column date_locale
 		dataType: dateTime
-		formatString: dd/mm/yyyy
+		formatString: Long Date
+		lineageTag: 4f49563c-feae-4d98-8c99-d2a07b0c947d
 		summarizeBy: none
 		sourceColumn: date_locale
+
+		annotation UnderlyingDateTimeDataType = Date
 
 	column consommation_mw
 		dataType: double
 		formatString: #,0
+		lineageTag: 15e64890-32fa-4037-a2ab-515b9d53daf7
 		summarizeBy: none
 		sourceColumn: consommation_mw
 
 	column production_mw
 		dataType: double
 		formatString: #,0
+		lineageTag: 3f9743ab-9250-460f-bc1e-4f023e3e9ee3
 		summarizeBy: none
 		sourceColumn: production_mw
 
 	column solde_mw
 		dataType: double
 		formatString: #,0
+		lineageTag: aa292dba-7d35-4ed3-a1a8-5a2a13da35d9
 		summarizeBy: none
 		sourceColumn: solde_mw
 
 	column temperature_c
 		dataType: double
 		formatString: 0.0
+		lineageTag: 3998a850-0817-45cf-9035-ef215c51fa38
 		summarizeBy: none
 		sourceColumn: temperature_c
 
 	column nb_heures
 		dataType: int64
 		formatString: 0
+		lineageTag: e39b4483-ccfc-49dd-990e-15d3524a9dc9
 		summarizeBy: none
 		sourceColumn: nb_heures
 

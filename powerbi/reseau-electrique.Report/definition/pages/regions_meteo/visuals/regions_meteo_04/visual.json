@@ -11,7 +11,6 @@
   },
   "visual": {
     "visualType": "scatterChart",
-    "drillFilterOtherVisuals": true,
     "query": {
       "queryState": {
         "Category": {
@@ -28,7 +27,8 @@
                 }
               },
               "queryRef": "Calendrier.Date",
-              "nativeQueryRef": "Date"
+              "nativeQueryRef": "Date",
+              "active": true
             }
           ]
         },
@@ -64,7 +64,8 @@
                 }
               },
               "queryRef": "National.Température moyenne (°C)",
-              "nativeQueryRef": "Température moyenne (°C)"
+              "nativeQueryRef": "Température moyenne (°C)",
+              "active": true
             }
           ]
         },
@@ -290,6 +291,7 @@
           }
         }
       ]
-    }
+    },
+    "drillFilterOtherVisuals": true
   }
 }

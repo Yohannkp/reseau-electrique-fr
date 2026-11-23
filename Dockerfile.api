@@ -1,0 +1,11 @@
+FROM python:3.13-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
+COPY requirements-ml.txt /tmp/requirements-ml.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-ml.txt
+COPY src /app/src
+
+WORKDIR /app
+ENV PYTHONPATH=/app/src DATA_DIR=/data MLFLOW_TRACKING_URI=http://mlflow:5000 MLFLOW_DISABLE_AGENT_HINT=1
+EXPOSE 8000
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

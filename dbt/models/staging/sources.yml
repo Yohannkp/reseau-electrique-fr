@@ -18,3 +18,5 @@ sources:
         description: Météo horaire par préfecture de région (Open-Meteo, réanalyse ERA5, CC BY 4.0), ~5 jours de retard.
       - name: meteo_prevision
         description: Météo horaire Open-Meteo, 7 jours passés et 2 jours de prévision, une collecte par heure.
+      - name: meteo_prevision_veille
+        description: Prévisions Open-Meteo telles qu'émises la veille (2022 →), un fichier par année. Sert à évaluer la prévision J+1 honnêtement.
